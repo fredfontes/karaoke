@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karaoke.top</title>
+    
+    <!-- Link para o arquivo de estilos CSS separado -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Biblioteca para gerar QR Code localmente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+    <div class="container" id="main-container">
+        <h1>🎤 Karaoke.top</h1>
+        <h2 id="subtitle">A sua festa começa aqui</h2>
+
+        <!-- TELA 1: Criar Sessão (Anfitrião) -->
+        <div id="screen-create" class="screen">
+            <p>Dê um nome para a sua sessão para iniciar o Karaokê e convidar seus amigos:</p>
+            <div class="form-group">
+                <label for="session-name">Nome da Sessão:</label>
+                <input type="text" id="session-name" placeholder="Ex: festa-do-bruno">
+            </div>
+            <button onclick="createSession()">Criar Sessão e Gerar QR Code</button>
+        </div>
+
+        <!-- TELA 2: Entrada de Convidados (Acesso via Link/QR Code) -->
+        <div id="screen-guest" class="screen hidden">
+            <p>Sessão ativa: <strong id="guest-session-title" style="color:var(--accent-color);"></strong></p>
+            <div class="form-group">
+                <label for="guest-name">Seu Nome:</label>
+                <input type="text" id="guest-name" placeholder="Ex: Maria">
+            </div>
+            <div class="form-group">
+                <label for="song-name">Música Desejada (Música + Artista):</label>
+                <input type="text" id="song-name" placeholder="Ex: Evidências - Chitãozinho e Xororó">
+            </div>
+            <button onclick="addSongToQueue()" class="btn-success">Enviar Música para a Fila</button>
+            <p id="guest-feedback" style="margin-top: 1rem; color: var(--success-color); display: none;">Música enviada com sucesso! Volte para a tela principal.</p>
+        </div>
+
+        <!-- TELA 3: Painel do Anfitrião (Fila e Player) -->
+        <div id="screen-panel" class="screen hidden">
+            <p>Convide seus amigos escaneando o código abaixo:</p>
+            <div id="qrcode-container"></div>
+            <div class="session-link-box" id="session-url-text"></div>
+
+            <h3>Fila de Espera</h3>
+            <div class="queue-list" id="queue-container">
+                <!-- Itens injetados pelo JS -->
+            </div>
+
+            <!-- Botão que abre a busca do YouTube formatada em nova aba -->
+            <button id="btn-play-current" class="btn-success" onclick="playCurrentSong()" disabled>
+                ▶️ Tocar Música Atual no YouTube
+            </button>
+
+            <button class="btn-danger" onclick="nextSinger()">⏭️ Chamar Próximo (Ativa Transição)</button>
+        </div>
+    </div>
+
+    <!-- OVERLAYS (Telas sobrepostas para Anúncio e Countdown) -->
+    
+    <!-- Tela de Anúncio -->
+    <div id="overlay-ad" class="fullscreen-overlay hidden">
+        <h2 style="color: white; margin-bottom: 1rem;">Publicidade</h2>
+        <div id="ad-content"></div> 
+        <p style="margin-top: 1rem;">O karaokê volta em <span id="ad-timer"></span> segundos...</p>
+    </div>
+
+    <!-- Tela de Countdown -->
+    <div id="overlay-countdown" class="fullscreen-overlay hidden">
+        <h2>Prepare-se! O próximo a cantar é:</h2>
+        <h1 id="countdown-singer" style="font-size: 4rem; color: var(--accent-color);"></h1>
+        <p>Música: <strong id="countdown-song" style="color: white; font-size: 1.5rem;"></strong></p>
+        <div class="countdown-number" id="countdown-number">10</div>
+    </div>
+
+    <!-- Scripts externos da aplicação -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
