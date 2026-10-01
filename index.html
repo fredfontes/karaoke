@@ -88,7 +88,7 @@
             <div id="sessionBadge" class="hidden items-center gap-3">
                 <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Sala:</span>
+                    <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Sessão:</span>
                     <span id="badgeCode" class="font-mono font-extrabold text-pink-400 text-sm"></span>
                 </div>
                 <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full font-semibold transition-all">
@@ -105,7 +105,7 @@
         <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono backdrop-blur-md">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-triangle-exclamation text-lg text-red-400"></i>
-                <div id="errorAlertText">Aviso de erro no Firebase...</div>
+                <div id="errorAlertText">Aviso de erro...</div>
             </div>
         </div>
 
@@ -272,7 +272,7 @@
                 <div class="flex items-center justify-between mb-6">
                     <div>
                         <h2 class="text-lg font-extrabold text-white">Pedir Música</h2>
-                        <p class="text-xs text-slate-400">Conectado à Sala <span id="guestSessionCode" class="text-pink-400 font-mono font-bold"></span></p>
+                        <p class="text-xs text-slate-400">Conectado à Sessão <span id="guestSessionCode" class="text-pink-400 font-mono font-bold"></span></p>
                     </div>
                     <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold border border-pink-500/20">
                         <i class="fa-solid fa-microphone text-base"></i>
@@ -349,7 +349,6 @@
         let isPlayerReady = false;
         let countdownInterval = null;
 
-        // Inicialização com Captura Transparente de Erros
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
@@ -456,6 +455,7 @@
             if (!db) return;
             db.collection('sessions').doc(code).onSnapshot((doc) => {
                 if (doc.exists) {
+                    hideError();
                     sessionData = doc.data();
                     renderUI();
                 } else {
@@ -612,6 +612,10 @@
             box.classList.remove('hidden');
         }
 
+        function hideError() {
+            document.getElementById('errorAlert').classList.add('hidden');
+        }
+
         function maximizePlayer() {
             document.getElementById('playerContainer').classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
             document.getElementById('fullscreenExitBtn').classList.remove('hidden');
@@ -731,7 +735,7 @@
             } catch (e) {}
         }
 
-        // Auto-Detectar Sessão no URL
+        // Auto-Detectar Sessão no URL ao carregar a página
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const sessionParam = params.get('session');
