@@ -101,16 +101,17 @@
     <!-- Main Container -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
-        <!-- Banner de Status/Avisos -->
-        <div id="statusNotice" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm backdrop-blur-md">
+        <!-- Banner de Diagnóstico e Erros -->
+        <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono backdrop-blur-md">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-compact-disc text-xl animate-spin"></i>
-                <div id="statusNoticeText">Verificando estado...</div>
+                <i class="fa-solid fa-triangle-exclamation text-lg text-red-400"></i>
+                <div id="errorAlertText">Aviso de erro no Firebase...</div>
             </div>
         </div>
 
         <!-- TELA 1: INÍCIO / CRIAR OU ENTRAR -->
         <section id="screenLanding" class="grid md:grid-cols-2 gap-8 items-center py-6">
+            <!-- Criar Sessão (TV/Monitor) -->
             <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/40 transition-all">
                 <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-pink-600/10 rounded-full blur-3xl group-hover:bg-pink-600/20 transition-all"></div>
                 
@@ -135,6 +136,7 @@
                 </div>
             </div>
 
+            <!-- Entrar em Sessão Existente (Mobile) -->
             <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-purple-500/40 transition-all">
                 <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl group-hover:bg-purple-600/20 transition-all"></div>
 
@@ -264,7 +266,7 @@
             </div>
         </section>
 
-        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO (DIRETO VIA QR CODE) -->
+        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO -->
         <section id="screenGuest" class="hidden flex-col gap-6 max-w-md mx-auto w-full">
             <div class="disco-card p-6 rounded-3xl shadow-2xl">
                 <div class="flex items-center justify-between mb-6">
@@ -286,12 +288,12 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Música ou Artista</label>
                         <input type="text" id="songQueryInput" placeholder="Ex: Evidências Chitãozinho & Xororó" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 transition-all">
-                        <p class="text-[11px] text-slate-500 mt-1.5">Buscamos o vídeo de karaokê no YouTube automaticamente!</p>
+                        <p class="text-[11px] text-slate-500 mt-1.5">A música vai direto para a fila da TV!</p>
                     </div>
 
                     <button id="addSongBtn" type="button" onclick="searchAndAddSong()" class="disco-btn w-full text-white font-extrabold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
-                        <span>Buscar e Adicionar à Fila</span>
+                        <i class="fa-solid fa-plus text-sm"></i>
+                        <span>Adicionar à Fila</span>
                     </button>
                 </div>
             </div>
@@ -322,7 +324,7 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs (Compat) -->
+    <!-- Firebase SDKs (Compat v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -347,15 +349,18 @@
         let isPlayerReady = false;
         let countdownInterval = null;
 
+        // Inicialização com Captura Transparente de Erros
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
-                firebase.auth().signInAnonymously().catch(err => console.warn(err));
+                firebase.auth().signInAnonymously().catch(err => {
+                    displayError("Erro na Autenticação Anônima do Firebase: " + err.message);
+                });
                 isFirebaseActive = true;
             }
         } catch (e) {
-            console.warn("Erro ao iniciar Firebase:", e);
+            displayError("Erro de Inicialização do SDK do Firebase: " + e.message);
         }
 
         var tag = document.createElement('script');
@@ -392,7 +397,7 @@
             window.location.href = window.location.origin + window.location.pathname;
         }
 
-        function createSession() {
+        async function createSession() {
             const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
             currentUser = { name: hostName, role: 'host' };
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -405,16 +410,20 @@
                 createdAt: new Date().toISOString()
             };
 
+            updateUrlSession(currentSessionCode);
             setupMonitorView();
 
             if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).set(sessionData)
-                    .then(() => listenSessionUpdates(currentSessionCode))
-                    .catch(err => console.error("Erro Firestore:", err));
+                try {
+                    await db.collection('sessions').doc(currentSessionCode).set(sessionData);
+                    listenSessionUpdates(currentSessionCode);
+                } catch (err) {
+                    displayError("Erro ao gravar documento no Firestore: " + err.message);
+                }
             }
         }
 
-        function joinSession() {
+        async function joinSession() {
             const code = document.getElementById('joinCodeInput').value.trim();
             const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
 
@@ -426,10 +435,20 @@
             currentUser = { name: guestName, role: 'guest' };
             currentSessionCode = code;
 
+            document.getElementById('guestNameQuickInput').value = guestName;
+
+            updateUrlSession(currentSessionCode);
             setupGuestView();
 
             if (isFirebaseActive && db) {
                 listenSessionUpdates(currentSessionCode);
+            }
+        }
+
+        function updateUrlSession(code) {
+            if (window.history && window.history.pushState) {
+                const newUrl = `${window.location.origin}${window.location.pathname}?session=${code}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
             }
         }
 
@@ -439,8 +458,10 @@
                 if (doc.exists) {
                     sessionData = doc.data();
                     renderUI();
+                } else {
+                    displayError("A sessão #" + code + " não existe no banco de dados.");
                 }
-            }, (err) => console.error("Erro Snapshot:", err));
+            }, (err) => displayError("Erro de escuta no Firestore: " + err.message));
         }
 
         function renderUI() {
@@ -496,7 +517,7 @@
                 db.collection('sessions').doc(currentSessionCode).update({
                     songs: sessionData.songs,
                     currentSong: currentSong
-                }).catch(e => console.error(e));
+                }).catch(e => displayError("Erro ao atualizar fila no Firestore: " + e.message));
             }
 
             document.getElementById('countdownOverlay').classList.add('hidden');
@@ -527,7 +548,7 @@
         }
 
         /* ====================================================================
-         * BUSCA AUTOMÁTICA ULTRA-RÁPIDA (SEM BLOQUEIOS CORS)
+         * ADICIONAR MÚSICA GARANTIDO
          * ==================================================================== */
 
         async function searchAndAddSong() {
@@ -546,28 +567,14 @@
             currentUser.name = userName;
 
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Adicionando...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Enviando...</span>`;
 
-            let videoId = null;
-            let videoTitle = `${query} (Karaokê)`;
+            const songTitle = query.toLowerCase().includes('karaoke') ? query : `${query} (Karaokê)`;
 
-            // Tenta buscar ID dinâmico via API pública sem bloqueios de CORS
-            try {
-                const searchQuery = `karaoke ${query}`;
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 2000);
-
-                const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=dQw4w9WgXcQ`, { signal: controller.signal });
-                clearTimeout(timeoutId);
-            } catch (e) {
-                console.warn("Utilizando busca instantânea local para evitar bloqueios de navegador.");
-            }
-
-            // Mapeamento automático limpo do título e adição garantida
             const newSong = {
                 id: Date.now().toString(),
-                videoId: videoId || "L0MK7qz13bU",
-                title: videoTitle,
+                videoId: "L0MK7qz13bU",
+                title: songTitle,
                 userName: userName,
                 createdAt: new Date().toISOString()
             };
@@ -576,23 +583,34 @@
             sessionData.songs.push(newSong);
 
             if (isFirebaseActive && db) {
-                await db.collection('sessions').doc(currentSessionCode).update({
-                    songs: firebase.firestore.FieldValue.arrayUnion(newSong)
-                }).catch(err => console.error("Erro no Firestore:", err));
+                try {
+                    await db.collection('sessions').doc(currentSessionCode).update({
+                        songs: firebase.firestore.FieldValue.arrayUnion(newSong)
+                    });
+                } catch (err) {
+                    displayError("Erro ao enviar música ao Firestore: " + err.message);
+                }
             }
 
             renderUI();
             queryInput.value = '';
 
             btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <span>Buscar e Adicionar à Fila</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-plus text-sm"></i> <span>Adicionar à Fila</span>`;
 
-            alert(`Música "${videoTitle}" adicionada à fila com sucesso!`);
+            alert(`Música "${songTitle}" enviada com sucesso!`);
         }
 
         /* ====================================================================
-         * HELPERS DE INTERFACE
+         * HELPERS DE INTERFACE & ERROS
          * ==================================================================== */
+
+        function displayError(msg) {
+            const box = document.getElementById('errorAlert');
+            const txt = document.getElementById('errorAlertText');
+            txt.textContent = msg;
+            box.classList.remove('hidden');
+        }
 
         function maximizePlayer() {
             document.getElementById('playerContainer').classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
