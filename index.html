@@ -39,7 +39,12 @@
                 <input type="text" id="song-name" placeholder="Ex: Evidências - Chitãozinho e Xororó">
             </div>
             <button onclick="addSongToQueue()" class="btn-success">Enviar Música para a Fila</button>
-            <p id="guest-feedback" style="margin-top: 1rem; color: var(--success-color); display: none;">Música enviada com sucesso! Volte para a tela principal.</p>
+            <p id="guest-feedback" style="margin-top: 1rem; color: var(--success-color); display: none;">Música enviada com sucesso!</p>
+
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.5rem; text-align: left;">Playlist da Sessão</h3>
+            <div class="queue-list" id="guest-queue-container">
+                <!-- Itens da fila renderizados via JS -->
+            </div>
         </div>
 
         <!-- TELA 3: Painel do Anfitrião (Fila e Player) -->
