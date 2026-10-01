@@ -29,6 +29,15 @@ window.onload = () => {
     }
 };
 
+// Sincroniza instantaneamente as listas entre abas do navegador quando o localStorage for alterado
+window.addEventListener('storage', (event) => {
+    if (event.key === `karaoke_queue_${currentSession}`) {
+        loadQueueFromLocal();
+        renderQueue();
+        renderGuestQueue();
+    }
+});
+
 /**
  * Alterna a visibilidade das telas principais
  */
@@ -108,7 +117,9 @@ function addSongToQueue() {
     document.getElementById('song-name').value = "";
     document.getElementById('guest-feedback').style.display = "block";
 
+    // Atualiza imediatamente a playlist na tela local e no painel do anfitrião
     renderGuestQueue();
+    renderQueue();
 
     setTimeout(() => { 
         document.getElementById('guest-feedback').style.display = "none"; 
