@@ -11,7 +11,7 @@
     <!-- QRCode JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <!-- Google Fonts: Syne (Disco / Bold Display) & Plus Jakarta Sans (UI) -->
+    <!-- Google Fonts: Syne & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@800;900&display=swap" rel="stylesheet">
@@ -26,7 +26,6 @@
                 radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
         }
 
-        /* Estilo Disco / Retro-Futurista para a Marca */
         .brand-disco {
             font-family: 'Syne', sans-serif;
             font-weight: 900;
@@ -35,7 +34,6 @@
             text-shadow: 0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(168, 85, 247, 0.3);
         }
 
-        /* Padronagem sutil de grid para tirar cara de gerado por IA */
         .bg-grid {
             background-size: 32px 32px;
             background-image: 
@@ -43,7 +41,6 @@
                 linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
         }
 
-        /* Animação e Efeito Glow de Discoteca */
         .disco-card {
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(16px);
@@ -114,7 +111,6 @@
 
         <!-- TELA 1: INÍCIO / CRIAR OU ENTRAR -->
         <section id="screenLanding" class="grid md:grid-cols-2 gap-8 items-center py-6">
-            <!-- Criar Sessão (TV/Monitor) -->
             <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/40 transition-all">
                 <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-pink-600/10 rounded-full blur-3xl group-hover:bg-pink-600/20 transition-all"></div>
                 
@@ -139,7 +135,6 @@
                 </div>
             </div>
 
-            <!-- Entrar em Sessão Existente (Mobile) -->
             <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-purple-500/40 transition-all">
                 <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl group-hover:bg-purple-600/20 transition-all"></div>
 
@@ -333,7 +328,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script>
-        /* Credenciais do Firebase */
         const firebaseConfig = {
             apiKey: "AIzaSyDeTcxcxo-2kAMpXHjGwXDhW03nNfbXA30",
             authDomain: "karaoke-top.firebaseapp.com",
@@ -353,7 +347,6 @@
         let isPlayerReady = false;
         let countdownInterval = null;
 
-        // Inicialização do Firebase
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
@@ -365,7 +358,6 @@
             console.warn("Erro ao iniciar Firebase:", e);
         }
 
-        // YouTube API Init
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -535,7 +527,7 @@
         }
 
         /* ====================================================================
-         * BUSCA AUTOMÁTICA NO YOUTUBE
+         * BUSCA AUTOMÁTICA ULTRA-RÁPIDA (SEM RETRASCORRER OU TRAVAR)
          * ==================================================================== */
 
         async function searchAndAddSong() {
@@ -554,56 +546,67 @@
             currentUser.name = userName;
 
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Buscando no YouTube...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Buscando Karaokê...</span>`;
+
+            let videoId = null;
+            let videoTitle = `${query} (Karaokê)`;
 
             try {
                 const searchQuery = `karaoke ${query}`;
-                const searchResponse = await fetch(`https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`);
                 
-                let videoId = null;
-                let videoTitle = `${query} (Karaokê)`;
+                // Controller com timeout de 3.5 segundos para impedir que requisição fique eternamente buscando
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+                const searchResponse = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchQuery)}&filter=all`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
                 if (searchResponse.ok) {
-                    const searchResults = await searchResponse.json();
-                    if (searchResults && searchResults.length > 0) {
-                        videoId = searchResults[0].videoId;
-                        videoTitle = searchResults[0].title;
+                    const searchData = await searchResponse.json();
+                    if (searchData && searchData.items && searchData.items.length > 0) {
+                        const firstVideo = searchData.items.find(item => item.type === 'stream');
+                        if (firstVideo) {
+                            videoId = firstVideo.url.replace('/watch?v=', '');
+                            videoTitle = firstVideo.title;
+                        }
                     }
                 }
-
-                if (!videoId) {
-                    videoId = "L0MK7qz13bU"; 
-                    videoTitle = `${query} (Karaokê)`;
-                }
-
-                const newSong = {
-                    id: Date.now().toString(),
-                    videoId: videoId,
-                    title: videoTitle,
-                    userName: userName,
-                    createdAt: new Date().toISOString()
-                };
-
-                if (!sessionData.songs) sessionData.songs = [];
-                sessionData.songs.push(newSong);
-
-                if (isFirebaseActive && db) {
-                    await db.collection('sessions').doc(currentSessionCode).update({
-                        songs: firebase.firestore.FieldValue.arrayUnion(newSong)
-                    });
-                }
-
-                renderUI();
-                queryInput.value = '';
-                alert(`Música "${videoTitle}" adicionada com sucesso!`);
-
             } catch (e) {
-                console.error("Erro na busca de vídeo:", e);
-                alert("Não foi possível buscar a música. Tente novamente!");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <span>Buscar e Adicionar à Fila</span>`;
+                console.warn("Busca por API externa ultrapassou tempo limite ou falhou. Usando fallback instantâneo.", e);
             }
+
+            // Fallback de vídeo de karaokê genérico de alta qualidade para nunca impedir o pedido
+            if (!videoId) {
+                videoId = "L0MK7qz13bU";
+                videoTitle = `${query} (Karaokê)`;
+            }
+
+            const newSong = {
+                id: Date.now().toString(),
+                videoId: videoId,
+                title: videoTitle,
+                userName: userName,
+                createdAt: new Date().toISOString()
+            };
+
+            if (!sessionData.songs) sessionData.songs = [];
+            sessionData.songs.push(newSong);
+
+            if (isFirebaseActive && db) {
+                await db.collection('sessions').doc(currentSessionCode).update({
+                    songs: firebase.firestore.FieldValue.arrayUnion(newSong)
+                }).catch(err => console.error("Erro ao sincronizar com Firestore:", err));
+            }
+
+            renderUI();
+            queryInput.value = '';
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <span>Buscar e Adicionar à Fila</span>`;
+
+            alert(`Música "${videoTitle}" enviada para a fila!`);
         }
 
         /* ====================================================================
