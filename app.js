@@ -16,6 +16,13 @@ window.onload = () => {
         document.getElementById('guest-session-title').innerText = currentSession;
         showScreen('screen-guest');
         document.getElementById('subtitle').innerText = "Adicione sua música à fila";
+
+        loadQueueFromLocal();
+        renderGuestQueue();
+        setInterval(() => {
+            loadQueueFromLocal();
+            renderGuestQueue();
+        }, 2000);
     } else {
         // Modo Anfitrião: tela inicial de criar sessão
         showScreen('screen-create');
@@ -44,6 +51,10 @@ function createSession() {
     isHost = true;
     queue = [];
     saveQueueToLocal();
+
+    const newUrl = `${window.location.origin}${window.location.pathname}?session=${currentSession}`;
+    window.history.pushState({ session: currentSession }, '', newUrl);
+
     setupHostPanel();
 }
 
@@ -97,6 +108,8 @@ function addSongToQueue() {
     document.getElementById('song-name').value = "";
     document.getElementById('guest-feedback').style.display = "block";
 
+    renderGuestQueue();
+
     setTimeout(() => { 
         document.getElementById('guest-feedback').style.display = "none"; 
     }, 4000);
@@ -143,6 +156,34 @@ function renderQueue() {
         div.innerHTML = `
             <div>
                 <div class="singer-name">${index === 0 ? "🎤 Atual: " : (index + 1) + ". "}${item.singer}</div>
+                <div class="song-name">${item.song}</div>
+            </div>
+        `;
+        if (index === 0) div.style.borderLeft = "4px solid var(--accent-color)";
+        container.appendChild(div);
+    });
+}
+
+/**
+ * Renderiza os itens da fila na tela do convidado
+ */
+function renderGuestQueue() {
+    const container = document.getElementById('guest-queue-container');
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (queue.length === 0) {
+        container.innerHTML = `<div class="queue-item">Nenhuma música na fila ainda. Seja o primeiro a pedir!</div>`;
+        return;
+    }
+
+    queue.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'queue-item';
+        div.innerHTML = `
+            <div>
+                <div class="singer-name">${index === 0 ? "🎤 A cantar agora: " : (index + 1) + ". "}${item.singer}</div>
                 <div class="song-name">${item.song}</div>
             </div>
         `;
