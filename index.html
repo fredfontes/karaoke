@@ -242,7 +242,7 @@
                         <input type="url" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
                     </div>
 
-                    <button onclick="addSongToQueue()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
+                    <button id="addSongBtn" onclick="addSongToQueue()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-plus"></i>
                         <span>Pedir Música</span>
                     </button>
@@ -281,6 +281,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-check-compat.js"></script>
 
     <script>
         /* Configuração do Firebase com suas credenciais do projeto karaoke-top */
@@ -303,15 +304,24 @@
         let player = null;
         let isPlayerReady = false;
         let countdownInterval = null;
+        let isSubmitting = false;
 
-        // Inicialização do Firebase (Versão Compat Oficial)
+        // Inicialização do Firebase & App Check (reCAPTCHA Enterprise)
         try {
-            firebase.initializeApp(firebaseConfig);
+            const app = firebase.initializeApp(firebaseConfig);
+            
+            // Inicializar o Firebase App Check com a sua chave do reCAPTCHA Enterprise
+            const appCheck = firebase.appCheck();
+            appCheck.activate(
+                new firebase.appCheck.ReCaptchaEnterpriseProvider('6Lf7ttktAAAAAF6WjVIQRpKQ_1YNeQMOhNcJodb4'),
+                true // Auto-refresh de tokens
+            );
+
             db = firebase.firestore();
             firebase.auth().signInAnonymously();
             isFirebaseActive = true;
         } catch (e) {
-            console.error("Erro na inicialização do Firebase:", e);
+            console.error("Erro na inicialização do Firebase / App Check:", e);
         }
 
         // Carregar a API do YouTube IFrame
@@ -341,7 +351,6 @@
         }
 
         function onPlayerStateChange(event) {
-            // Quando o vídeo termina
             if (event.data === YT.PlayerState.ENDED) {
                 minimizePlayer();
                 finishCurrentSong();
@@ -359,12 +368,10 @@
          * LÓGICA DE GERENCIAMENTO DE SESSÕES
          * ==================================================================== */
 
-        // Função para criar uma nova sessão (Monitor/TV)
         async function createSession() {
             const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
             currentUser = { name: hostName, role: 'host' };
             
-            // Gerar código numérico simples de 4 dígitos
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
 
             sessionData = {
@@ -387,7 +394,6 @@
             setupMonitorView();
         }
 
-        // Função para entrar numa sessão existente (Mobile)
         async function joinSession() {
             const code = document.getElementById('joinCodeInput').value.trim();
             const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
@@ -407,7 +413,6 @@
             setupGuestView();
         }
 
-        // Ouvinte de Sincronização em Tempo Real
         function listenSessionUpdates(code) {
             if (!db) return;
             db.collection('sessions').doc(code).onSnapshot((doc) => {
@@ -419,7 +424,6 @@
             });
         }
 
-        // Renderização Dinâmica da Interface
         function renderUI() {
             if (currentUser.role === 'host') {
                 renderQueueList();
@@ -509,11 +513,14 @@
         }
 
         /* ====================================================================
-         * ADICIONAR MÚSICA (CONVIDADO)
+         * ADICIONAR MÚSICA (CONVIDADO COM RATE LIMITING)
          * ==================================================================== */
 
         async function addSongToQueue() {
+            if (isSubmitting) return;
+
             const urlInput = document.getElementById('ytUrlInput');
+            const btn = document.getElementById('addSongBtn');
             const url = urlInput.value.trim();
 
             if (!url) {
@@ -526,6 +533,10 @@
                 alert('Link do YouTube inválido!');
                 return;
             }
+
+            isSubmitting = true;
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             let videoTitle = 'Música do YouTube';
             try {
@@ -547,6 +558,15 @@
             };
 
             if (!sessionData.songs) sessionData.songs = [];
+            
+            if (sessionData.songs.length >= 50) {
+                alert('A fila atingiu o limite de 50 músicas!');
+                isSubmitting = false;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
             sessionData.songs.push(newSong);
 
             if (isFirebaseActive && db) {
@@ -559,6 +579,13 @@
 
             urlInput.value = '';
             alert('Música adicionada à fila com sucesso!');
+
+            // Cooldown de 3 segundos para prevenir spam
+            setTimeout(() => {
+                isSubmitting = false;
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }, 3000);
         }
 
         /* ====================================================================
@@ -610,7 +637,6 @@
         }
 
         function generateQRCodes() {
-            // URL apontando diretamente para o domínio principal karaoke.top
             const sessionUrl = `https://karaoke.top/?session=${currentSessionCode}`;
             
             document.getElementById('qrcode').innerHTML = '';
