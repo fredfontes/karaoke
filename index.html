@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KARAOKE.TOP — Painel Principal</title>
+    <title>KARAOKE.TOP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome -->
@@ -11,43 +11,90 @@
     <!-- QRCode JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
+    <!-- Google Fonts: Syne (Disco / Bold Display) & Plus Jakarta Sans (UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@800;900&display=swap" rel="stylesheet">
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #08090d;
+            color: #f1f5f9;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(217, 70, 239, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(6, 182, 212, 0.08) 0%, transparent 40%);
         }
+
+        /* Estilo Disco / Retro-Futurista para a Marca */
+        .brand-disco {
+            font-family: 'Syne', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Padronagem sutil de grid para tirar cara de gerado por IA */
+        .bg-grid {
+            background-size: 32px 32px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+
+        /* Animação e Efeito Glow de Discoteca */
+        .disco-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+        }
+
+        .disco-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.35);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .disco-btn:hover {
+            box-shadow: 0 0 35px rgba(236, 72, 153, 0.55);
+            transform: translateY(-1px);
+        }
+
         .animate-pulse-fast {
-            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .4; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(0.96); }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-fuchsia-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
 
     <!-- Header -->
-    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="resetToLanding()">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
-                    <i class="fa-solid font-black text-xl text-white fa-microphone"></i>
+    <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-[1px] shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-all">
+                    <div class="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
+                        <i class="fa-solid fa-record-vinyl text-pink-400 text-lg group-hover:rotate-180 transition-transform duration-700"></i>
+                    </div>
                 </div>
-                <span class="font-extrabold text-2xl tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-400 via-pink-400 to-violet-400">
-                    KARAOKE.TOP
+                <span class="brand-disco text-2xl tracking-tight text-white">
+                    KARAOKE<span class="text-pink-500">.</span>TOP
                 </span>
             </div>
             
             <div id="sessionBadge" class="hidden items-center gap-3">
-                <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span class="text-xs text-slate-400 font-semibold uppercase">Sessão:</span>
-                    <span id="badgeCode" class="font-mono font-bold text-fuchsia-400 text-sm"></span>
+                <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Sala:</span>
+                    <span id="badgeCode" class="font-mono font-extrabold text-pink-400 text-sm"></span>
                 </div>
-                <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-full font-semibold transition-all">
+                <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full font-semibold transition-all">
                     <i class="fa-solid fa-right-from-bracket mr-1"></i> Sair
                 </button>
             </div>
@@ -58,9 +105,9 @@
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
         <!-- Banner de Status/Avisos -->
-        <div id="statusNotice" class="hidden mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm">
+        <div id="statusNotice" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-sm backdrop-blur-md">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                <i class="fa-solid fa-compact-disc text-xl animate-spin"></i>
                 <div id="statusNoticeText">Verificando estado...</div>
             </div>
         </div>
@@ -68,55 +115,55 @@
         <!-- TELA 1: INÍCIO / CRIAR OU ENTRAR -->
         <section id="screenLanding" class="grid md:grid-cols-2 gap-8 items-center py-6">
             <!-- Criar Sessão (TV/Monitor) -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:border-fuchsia-500/50 transition-all">
-                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-fuchsia-600/10 rounded-full blur-3xl group-hover:bg-fuchsia-600/20 transition-all"></div>
+            <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/40 transition-all">
+                <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-pink-600/10 rounded-full blur-3xl group-hover:bg-pink-600/20 transition-all"></div>
                 
-                <div class="flex items-center gap-3 mb-4 text-fuchsia-400">
+                <div class="flex items-center gap-3 mb-4 text-pink-400">
                     <i class="fa-solid fa-tv text-2xl"></i>
-                    <h2 class="text-xl font-bold">Iniciar no Monitor / TV</h2>
+                    <h2 class="text-xl font-extrabold tracking-tight text-white">Iniciar Tela da TV</h2>
                 </div>
                 
-                <p class="text-slate-400 text-sm mb-6">
-                    Crie uma nova sessão para abrir a tela principal de reprodução na sua TV com QR Code automático para os convidados.
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Abre o painel principal com o tocador de vídeos em tela cheia e o QR Code automático para a galera pedir músicas.
                 </p>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seu Nome / Anfitrião</label>
-                        <input type="text" id="hostNameInput" placeholder="Ex: Fred" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-fuchsia-500 transition-all">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Nome do Anfitrião</label>
+                        <input type="text" id="hostNameInput" placeholder="Ex: Fred" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 transition-all">
                     </div>
-                    <button id="btnCreateSession" type="button" onclick="createSession()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-play"></i>
-                        <span>Iniciar Tela da Sessão</span>
+                    <button id="btnCreateSession" type="button" onclick="createSession()" class="disco-btn w-full text-white font-extrabold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play text-sm"></i>
+                        <span>Abrir Palco do Karaokê</span>
                     </button>
                 </div>
             </div>
 
             <!-- Entrar em Sessão Existente (Mobile) -->
-            <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden group hover:border-violet-500/50 transition-all">
-                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-violet-600/10 rounded-full blur-3xl group-hover:bg-violet-600/20 transition-all"></div>
+            <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-purple-500/40 transition-all">
+                <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-purple-600/10 rounded-full blur-3xl group-hover:bg-purple-600/20 transition-all"></div>
 
-                <div class="flex items-center gap-3 mb-4 text-violet-400">
+                <div class="flex items-center gap-3 mb-4 text-purple-400">
                     <i class="fa-solid fa-mobile-screen-button text-2xl"></i>
-                    <h2 class="text-xl font-bold">Entrar pelo Celular</h2>
+                    <h2 class="text-xl font-extrabold tracking-tight text-white">Entrar pelo Celular</h2>
                 </div>
 
-                <p class="text-slate-400 text-sm mb-6">
-                    Já tem uma sessão rodando? Digite o código numérico para pedir músicas e acompanhar a fila.
+                <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+                    Entra numa sala existente usando o código de 4 dígitos para pedir músicas e acompanhar a fila em tempo real.
                 </p>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Código da Sessão (4 dígitos)</label>
-                        <input type="text" id="joinCodeInput" maxlength="4" placeholder="Ex: 4829" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white font-mono text-center tracking-widest text-lg uppercase focus:outline-none focus:border-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Código da Sala</label>
+                        <input type="text" id="joinCodeInput" maxlength="4" placeholder="Ex: 4829" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-white font-mono text-center tracking-widest text-xl uppercase focus:outline-none focus:border-purple-500 transition-all">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seu Nome / Apelido</label>
-                        <input type="text" id="guestNameInput" placeholder="Ex: Maria" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Seu Apelido</label>
+                        <input type="text" id="guestNameInput" placeholder="Ex: Maria" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-white placeholder-slate-600 focus:outline-none focus:border-purple-500 transition-all">
                     </div>
-                    <button id="btnJoinSession" type="button" onclick="joinSession()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3.5 px-6 rounded-xl border border-slate-700 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-right-to-bracket"></i>
-                        <span>Entrar na Sessão</span>
+                    <button id="btnJoinSession" type="button" onclick="joinSession()" class="w-full bg-white/5 hover:bg-white/10 text-white font-extrabold py-4 px-6 rounded-2xl border border-white/10 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket text-sm"></i>
+                        <span>Entrar na Fila</span>
                     </button>
                 </div>
             </div>
@@ -124,21 +171,21 @@
 
         <!-- TELA 2: PAINEL DO MONITOR / TV -->
         <section id="screenMonitor" class="hidden flex-col gap-6">
-            <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
+            <div class="flex flex-wrap items-center justify-between gap-4 disco-card p-4 rounded-2xl">
                 <div>
-                    <h1 class="text-xl font-bold flex items-center gap-2">
+                    <h1 class="text-xl font-extrabold flex items-center gap-2 text-white">
                         <span>Sessão de Karaokê</span>
-                        <span id="displaySessionCode" class="text-fuchsia-400 font-mono"></span>
+                        <span id="displaySessionCode" class="text-pink-400 font-mono"></span>
                     </h1>
-                    <p class="text-xs text-slate-400">Aponte a câmera do celular para adicionar músicas na fila</p>
+                    <p class="text-xs text-slate-400">Aponte a câmera do celular no QR Code para pedir suas músicas</p>
                 </div>
 
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleQrModal()" class="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-xl text-sm font-semibold border border-slate-700 flex items-center gap-2">
-                        <i class="fa-solid fa-qrcode text-fuchsia-400"></i>
+                    <button onclick="toggleQrModal()" class="bg-white/5 hover:bg-white/10 px-4 py-2.5 rounded-xl text-xs font-bold border border-white/10 flex items-center gap-2 transition-all">
+                        <i class="fa-solid fa-qrcode text-pink-400"></i>
                         <span>Expandir QR Code</span>
                     </button>
-                    <button onclick="skipCurrentSong()" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/30 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <button onclick="skipCurrentSong()" class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
                         <i class="fa-solid fa-forward"></i>
                         <span>Pular Música</span>
                     </button>
@@ -147,25 +194,25 @@
 
             <div class="grid lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 flex flex-col gap-4">
-                    <div id="playerContainer" class="relative bg-slate-950 border border-slate-800 rounded-3xl aspect-video overflow-hidden shadow-2xl flex items-center justify-center">
+                    <div id="playerContainer" class="relative bg-black border border-white/10 rounded-3xl aspect-video overflow-hidden shadow-2xl flex items-center justify-center">
                         <div id="playerEmptyState" class="text-center p-8">
-                            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 text-3xl">
-                                <i class="fa-solid fa-music"></i>
+                            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-pink-400 text-3xl shadow-inner">
+                                <i class="fa-solid fa-microphone-lines"></i>
                             </div>
-                            <h3 class="text-xl font-bold text-slate-300 mb-2">Aguardando Músicas...</h3>
-                            <p class="text-sm text-slate-500 max-w-md mx-auto">
-                                Escaneie o QR Code ao lado para adicionar a primeira música da fila.
+                            <h3 class="text-xl font-extrabold text-white mb-2">Aguardando a primeira música...</h3>
+                            <p class="text-xs text-slate-400 max-w-md mx-auto">
+                                Escaneie o QR Code ao lado para pesquisar qualquer cantor ou música no celular.
                             </p>
                         </div>
 
-                        <div id="countdownOverlay" class="hidden absolute inset-0 z-30 bg-slate-950/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center">
-                            <span class="text-xs font-bold tracking-widest text-fuchsia-400 uppercase mb-2">A SEGUIR NO PALCO</span>
+                        <div id="countdownOverlay" class="hidden absolute inset-0 z-30 bg-black/95 backdrop-blur-2xl flex flex-col items-center justify-center p-6 text-center">
+                            <span class="text-xs font-extrabold tracking-widest text-pink-400 uppercase mb-2">A SEGUIR NO PALCO</span>
                             <h2 id="nextSingerName" class="text-3xl md:text-5xl font-black text-white mb-2">---</h2>
                             <p id="nextSongTitle" class="text-base md:text-xl text-slate-400 max-w-lg mb-6 line-clamp-1">---</p>
                             
                             <div class="relative flex items-center justify-center">
-                                <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-fuchsia-500/20 flex items-center justify-center">
-                                    <span id="countdownTimer" class="text-5xl md:text-7xl font-black text-fuchsia-500 animate-pulse-fast">10</span>
+                                <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-pink-500/20 flex items-center justify-center">
+                                    <span id="countdownTimer" class="text-5xl md:text-7xl font-black text-pink-500 animate-pulse-fast">10</span>
                                 </div>
                             </div>
                         </div>
@@ -175,26 +222,26 @@
                         </div>
 
                         <div id="fullscreenExitBtn" class="hidden absolute top-4 right-4 z-50">
-                            <button onclick="minimizePlayer()" class="bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-bold py-2.5 px-4 rounded-xl border border-slate-700 shadow-xl flex items-center gap-2 backdrop-blur-md">
+                            <button onclick="minimizePlayer()" class="bg-black/80 hover:bg-black text-white text-xs font-bold py-2.5 px-4 rounded-xl border border-white/20 shadow-2xl flex items-center gap-2 backdrop-blur-md">
                                 <span>Sair da Tela Cheia</span>
-                                <kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">ESC</kbd>
+                                <kbd class="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-slate-400">ESC</kbd>
                                 <i class="fa-solid fa-xmark text-sm ml-1"></i>
                             </button>
                         </div>
                     </div>
 
-                    <div id="currentSongBar" class="hidden bg-slate-900/60 border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4">
+                    <div id="currentSongBar" class="hidden disco-card p-4 rounded-2xl flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3 overflow-hidden">
-                            <div class="w-10 h-10 rounded-xl bg-fuchsia-500/20 text-fuchsia-400 flex items-center justify-center shrink-0">
+                            <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-compact-disc text-xl animate-spin"></i>
                             </div>
                             <div class="truncate">
                                 <h4 id="currentSongTitle" class="font-bold text-white text-sm truncate">---</h4>
-                                <p id="currentSingerName" class="text-xs text-fuchsia-400">Cantando agora: ---</p>
+                                <p id="currentSingerName" class="text-xs text-pink-400">Cantando agora: ---</p>
                             </div>
                         </div>
 
-                        <button onclick="maximizePlayer()" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-700 flex items-center gap-2">
+                        <button onclick="maximizePlayer()" class="shrink-0 bg-white/5 hover:bg-white/10 text-xs font-bold px-3.5 py-2.5 rounded-xl border border-white/10 flex items-center gap-2 transition-all">
                             <i class="fa-solid fa-expand"></i>
                             <span>Tela Cheia</span>
                         </button>
@@ -202,20 +249,20 @@
                 </div>
 
                 <div class="flex flex-col gap-6">
-                    <div class="bg-slate-900/60 border border-slate-800 p-6 rounded-3xl flex flex-col items-center text-center">
-                        <div id="qrcode" class="p-3 bg-white rounded-2xl shadow-xl mb-4 min-h-[140px] flex items-center justify-center"></div>
-                        <p class="text-xs text-slate-400 font-medium">Escaneie para entrar na sala</p>
-                        <p id="qrUrlText" class="text-[11px] font-mono text-fuchsia-400 mt-1 select-all"></p>
+                    <div class="disco-card p-6 rounded-3xl flex flex-col items-center text-center">
+                        <div id="qrcode" class="p-3 bg-white rounded-2xl shadow-2xl mb-4 min-h-[140px] flex items-center justify-center"></div>
+                        <p class="text-xs text-slate-400 font-medium">Escaneie para abrir no celular</p>
+                        <p id="qrUrlText" class="text-[11px] font-mono text-pink-400 mt-1.5 select-all"></p>
                     </div>
 
-                    <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-3xl flex-grow flex flex-col">
-                        <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <i class="fa-solid fa-list-ol text-fuchsia-400"></i>
+                    <div class="disco-card p-5 rounded-3xl flex-grow flex flex-col">
+                        <h3 class="text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-ol text-pink-400"></i>
                             <span>Fila de Músicas</span>
-                            <span id="queueCount" class="ml-auto text-xs bg-slate-800 px-2 py-0.5 rounded-full text-slate-400">0</span>
+                            <span id="queueCount" class="ml-auto text-xs bg-white/5 px-2.5 py-0.5 rounded-full text-slate-400 border border-white/5">0</span>
                         </h3>
 
-                        <div id="queueList" class="flex-grow space-y-3 overflow-y-auto max-h-[300px] pr-1">
+                        <div id="queueList" class="flex-grow space-y-2.5 overflow-y-auto max-h-[300px] pr-1">
                         </div>
                     </div>
                 </div>
@@ -224,44 +271,43 @@
 
         <!-- TELA 3: VISÃO MOBILE DO CONVIDADO (DIRETO VIA QR CODE) -->
         <section id="screenGuest" class="hidden flex-col gap-6 max-w-md mx-auto w-full">
-            <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl shadow-2xl">
+            <div class="disco-card p-6 rounded-3xl shadow-2xl">
                 <div class="flex items-center justify-between mb-6">
                     <div>
-                        <h2 class="text-lg font-bold text-white">Pedir Música de Karaokê</h2>
-                        <p class="text-xs text-slate-400">Conectado à Sessão <span id="guestSessionCode" class="text-fuchsia-400 font-mono font-bold"></span></p>
+                        <h2 class="text-lg font-extrabold text-white">Pedir Música</h2>
+                        <p class="text-xs text-slate-400">Conectado à Sala <span id="guestSessionCode" class="text-pink-400 font-mono font-bold"></span></p>
                     </div>
-                    <div class="w-10 h-10 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center font-bold">
-                        <i class="fa-solid fa-microphone text-lg"></i>
+                    <div class="w-10 h-10 rounded-2xl bg-pink-500/10 text-pink-400 flex items-center justify-center font-bold border border-pink-500/20">
+                        <i class="fa-solid fa-microphone text-base"></i>
                     </div>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seu Nome / Apelido</label>
-                        <input type="text" id="guestNameQuickInput" placeholder="Ex: Maria" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Seu Nome / Apelido</label>
+                        <input type="text" id="guestNameQuickInput" placeholder="Ex: Maria" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 transition-all">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome da Música ou Artista</label>
-                        <input type="text" id="songQueryInput" placeholder="Ex: Evidências Chitãozinho & Xororó" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
-                        <p class="text-[11px] text-slate-500 mt-1">Buscamos o melhor vídeo de karaokê no YouTube automaticamente!</p>
+                        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Música ou Artista</label>
+                        <input type="text" id="songQueryInput" placeholder="Ex: Evidências Chitãozinho & Xororó" class="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-pink-500 transition-all">
+                        <p class="text-[11px] text-slate-500 mt-1.5">Buscamos o vídeo de karaokê no YouTube automaticamente!</p>
                     </div>
 
-                    <button id="addSongBtn" type="button" onclick="searchAndAddSong()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-magnifying-glass"></i>
+                    <button id="addSongBtn" type="button" onclick="searchAndAddSong()" class="disco-btn w-full text-white font-extrabold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass text-sm"></i>
                         <span>Buscar e Adicionar à Fila</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Fila na Sala para o Convidado -->
-            <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl shadow-2xl">
-                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-stream text-fuchsia-400"></i>
-                    <span>Fila de Espera na Tela</span>
+            <div class="disco-card p-6 rounded-3xl shadow-2xl">
+                <h3 class="text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-stream text-pink-400"></i>
+                    <span>Fila de Espera na TV</span>
                 </h3>
 
-                <div id="guestQueueList" class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+                <div id="guestQueueList" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
                 </div>
             </div>
         </section>
@@ -269,15 +315,15 @@
     </main>
 
     <!-- Modal QR Code Maximizado -->
-    <div id="qrModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl max-w-sm w-full text-center relative">
+    <div id="qrModal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
+        <div class="disco-card p-8 rounded-3xl max-w-sm w-full text-center relative border border-white/10">
             <button onclick="toggleQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
-            <h3 class="text-xl font-bold text-white mb-2">Escanear QR Code</h3>
+            <h3 class="text-xl font-extrabold text-white mb-2">Escanear QR Code</h3>
             <p class="text-xs text-slate-400 mb-6">Aponte a câmera para abrir o karaoke.top nesta sessão</p>
             <div id="modalQrcode" class="p-4 bg-white rounded-2xl shadow-2xl mx-auto inline-block mb-4"></div>
-            <p id="modalQrCodeText" class="text-xs font-mono text-fuchsia-400 font-bold select-all"></p>
+            <p id="modalQrCodeText" class="text-xs font-mono text-pink-400 font-bold select-all"></p>
         </div>
     </div>
 
@@ -489,7 +535,7 @@
         }
 
         /* ====================================================================
-         * BUSCA AUTOMÁTICA NO YOUTUBE (SEM PEDIR LINK)
+         * BUSCA AUTOMÁTICA NO YOUTUBE
          * ==================================================================== */
 
         async function searchAndAddSong() {
@@ -508,13 +554,10 @@
             currentUser.name = userName;
 
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Buscando no YouTube...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Buscando no YouTube...</span>`;
 
             try {
-                // Termo de busca forçando a palavra "karaoke"
                 const searchQuery = `karaoke ${query}`;
-                
-                // Requisição para API Invidious / oEmbed para resgatar primeiro ID de vídeo de karaokê
                 const searchResponse = await fetch(`https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`);
                 
                 let videoId = null;
@@ -528,9 +571,7 @@
                     }
                 }
 
-                // Fallback caso a busca de API Invidious falhe
                 if (!videoId) {
-                    // ID de fallback funcional caso a pesquisa de terceiros não retorne
                     videoId = "L0MK7qz13bU"; 
                     videoTitle = `${query} (Karaokê)`;
                 }
@@ -635,9 +676,9 @@
             }
 
             list.innerHTML = songs.map((song, idx) => `
-                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center justify-between gap-3 backdrop-blur-md">
                     <div class="flex items-center gap-3 overflow-hidden">
-                        <span class="text-xs font-bold font-mono text-fuchsia-400 w-4">${idx + 1}</span>
+                        <span class="text-xs font-black font-mono text-pink-400 w-4">${idx + 1}</span>
                         <div class="truncate">
                             <h5 class="text-xs font-bold text-white truncate">${song.title}</h5>
                             <p class="text-[10px] text-slate-400"><i class="fa-solid fa-user text-[9px]"></i> ${song.userName}</p>
@@ -657,9 +698,9 @@
             }
 
             list.innerHTML = songs.map((song, idx) => `
-                <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between gap-3">
+                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center justify-between gap-3 backdrop-blur-md">
                     <div class="flex items-center gap-3 overflow-hidden">
-                        <span class="text-xs font-bold font-mono text-fuchsia-400 w-4">${idx + 1}</span>
+                        <span class="text-xs font-black font-mono text-pink-400 w-4">${idx + 1}</span>
                         <div class="truncate">
                             <h5 class="text-xs font-bold text-white truncate">${song.title}</h5>
                             <p class="text-[10px] text-slate-400"><i class="fa-solid fa-user text-[9px]"></i> ${song.userName}</p>
@@ -688,7 +729,7 @@
             } catch (e) {}
         }
 
-        // Auto-Detectar Sessão no URL (Direto pelo QR Code sem passar pela Landing)
+        // Auto-Detectar Sessão no URL
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const sessionParam = params.get('session');
