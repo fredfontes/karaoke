@@ -354,12 +354,12 @@
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 firebase.auth().signInAnonymously().catch(err => {
-                    displayError("Erro na Autenticação Anônima do Firebase: " + err.message);
+                    console.warn("Autenticação anônima:", err);
                 });
                 isFirebaseActive = true;
             }
         } catch (e) {
-            displayError("Erro de Inicialização do SDK do Firebase: " + e.message);
+            console.warn("Erro no Firebase SDK:", e);
         }
 
         var tag = document.createElement('script');
@@ -413,12 +413,11 @@
             setupMonitorView();
 
             if (isFirebaseActive && db) {
-                try {
-                    await db.collection('sessions').doc(currentSessionCode).set(sessionData);
-                    listenSessionUpdates(currentSessionCode);
-                } catch (err) {
-                    displayError("Erro ao gravar documento no Firestore: " + err.message);
-                }
+                db.collection('sessions').doc(currentSessionCode).set(sessionData)
+                    .then(() => listenSessionUpdates(currentSessionCode))
+                    .catch(err => {
+                        displayError("Aviso do Firebase (Criação): " + err.message + ". Ative o Cloud Firestore no Console!");
+                    });
             }
         }
 
@@ -459,9 +458,16 @@
                     sessionData = doc.data();
                     renderUI();
                 } else {
-                    displayError("A sessão #" + code + " não existe no banco de dados.");
+                    // Fallback para criação dinâmica caso o documento inicial não tenha sido persistido
+                    if (currentUser.role === 'host') {
+                        db.collection('sessions').doc(code).set(sessionData);
+                    } else {
+                        displayError("Aguardando criação da sessão #" + code + " no Firebase Firestore...");
+                    }
                 }
-            }, (err) => displayError("Erro de escuta no Firestore: " + err.message));
+            }, (err) => {
+                displayError("Ative o Cloud Firestore no Firebase Console! Erro: " + err.message);
+            });
         }
 
         function renderUI() {
@@ -517,7 +523,7 @@
                 db.collection('sessions').doc(currentSessionCode).update({
                     songs: sessionData.songs,
                     currentSong: currentSong
-                }).catch(e => displayError("Erro ao atualizar fila no Firestore: " + e.message));
+                }).catch(e => console.error(e));
             }
 
             document.getElementById('countdownOverlay').classList.add('hidden');
@@ -583,13 +589,11 @@
             sessionData.songs.push(newSong);
 
             if (isFirebaseActive && db) {
-                try {
-                    await db.collection('sessions').doc(currentSessionCode).update({
-                        songs: firebase.firestore.FieldValue.arrayUnion(newSong)
-                    });
-                } catch (err) {
-                    displayError("Erro ao enviar música ao Firestore: " + err.message);
-                }
+                db.collection('sessions').doc(currentSessionCode).update({
+                    songs: firebase.firestore.FieldValue.arrayUnion(newSong)
+                }).catch(err => {
+                    console.warn("Música adicionada localmente. Erro no Firestore:", err);
+                });
             }
 
             renderUI();
