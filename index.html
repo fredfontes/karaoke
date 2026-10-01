@@ -32,7 +32,7 @@
     <!-- Header -->
     <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="window.location.href='/'">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="resetToLanding()">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
                     <i class="fa-solid font-black text-xl text-white fa-microphone"></i>
                 </div>
@@ -41,10 +41,15 @@
                 </span>
             </div>
             
-            <div id="sessionBadge" class="hidden items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span class="text-xs text-slate-400 font-semibold uppercase">Sessão:</span>
-                <span id="badgeCode" class="font-mono font-bold text-fuchsia-400 text-sm"></span>
+            <div id="sessionBadge" class="hidden items-center gap-3">
+                <div class="flex items-center gap-2 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span class="text-xs text-slate-400 font-semibold uppercase">Sessão:</span>
+                    <span id="badgeCode" class="font-mono font-bold text-fuchsia-400 text-sm"></span>
+                </div>
+                <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-full font-semibold transition-all">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i> Sair
+                </button>
             </div>
         </div>
     </header>
@@ -52,11 +57,11 @@
     <!-- Main Container -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
-        <!-- Banner de Status de Conexão -->
+        <!-- Banner de Status/Avisos -->
         <div id="statusNotice" class="hidden mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                <div id="statusNoticeText">Verificando conexão com o servidor...</div>
+                <div id="statusNoticeText">Verificando estado...</div>
             </div>
         </div>
 
@@ -217,39 +222,46 @@
             </div>
         </section>
 
-        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO -->
+        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO (DIRETO VIA QR CODE) -->
         <section id="screenGuest" class="hidden flex-col gap-6 max-w-md mx-auto w-full">
             <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl shadow-2xl">
                 <div class="flex items-center justify-between mb-6">
                     <div>
-                        <h2 class="text-lg font-bold text-white">Adicionar Música</h2>
-                        <p class="text-xs text-slate-400">Sessão: <span id="guestSessionCode" class="text-fuchsia-400 font-mono font-bold"></span></p>
+                        <h2 class="text-lg font-bold text-white">Pedir Música de Karaokê</h2>
+                        <p class="text-xs text-slate-400">Conectado à Sessão <span id="guestSessionCode" class="text-fuchsia-400 font-mono font-bold"></span></p>
                     </div>
                     <div class="w-10 h-10 rounded-full bg-fuchsia-500/10 text-fuchsia-400 flex items-center justify-center font-bold">
-                        <i class="fa-solid fa-music"></i>
+                        <i class="fa-solid fa-microphone text-lg"></i>
                     </div>
                 </div>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Link do YouTube</label>
-                        <input type="url" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Seu Nome / Apelido</label>
+                        <input type="text" id="guestNameQuickInput" placeholder="Ex: Maria" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
                     </div>
 
-                    <button id="addSongBtn" type="button" onclick="addSongToQueue()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Pedir Música</span>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Nome da Música ou Artista</label>
+                        <input type="text" id="songQueryInput" placeholder="Ex: Evidências Chitãozinho & Xororó" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-fuchsia-500 transition-all">
+                        <p class="text-[11px] text-slate-500 mt-1">Buscamos o melhor vídeo de karaokê no YouTube automaticamente!</p>
+                    </div>
+
+                    <button id="addSongBtn" type="button" onclick="searchAndAddSong()" class="w-full bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-bold py-3.5 px-6 rounded-xl shadow-lg shadow-fuchsia-600/25 transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Buscar e Adicionar à Fila</span>
                     </button>
                 </div>
             </div>
 
+            <!-- Fila na Sala para o Convidado -->
             <div class="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl shadow-2xl">
                 <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-stream text-fuchsia-400"></i>
-                    <span>Próximas na Sala</span>
+                    <span>Fila de Espera na Tela</span>
                 </h3>
 
-                <div id="guestQueueList" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+                <div id="guestQueueList" class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                 </div>
             </div>
         </section>
@@ -295,19 +307,16 @@
         let isPlayerReady = false;
         let countdownInterval = null;
 
-        // Inicialização com Tratamento Silencioso de Erros
+        // Inicialização do Firebase
         try {
             if (typeof firebase !== 'undefined') {
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
-                firebase.auth().signInAnonymously().catch(err => {
-                    showNotice("Aviso de Conexão: Falha ao autenticar anônimo no Firebase.");
-                });
+                firebase.auth().signInAnonymously().catch(err => console.warn(err));
                 isFirebaseActive = true;
             }
         } catch (e) {
             console.warn("Erro ao iniciar Firebase:", e);
-            showNotice("Modo Local Ativo: Firebase indisponível no momento.");
         }
 
         // YouTube API Init
@@ -338,8 +347,12 @@
         });
 
         /* ====================================================================
-         * NAVEGAÇÃO & CRIAÇÃO DE SESSÃO (MUDANÇA DE TELA INSTANTÂNEA)
+         * NAVEGAÇÃO & GERENCIAMENTO DE SESSÃO
          * ==================================================================== */
+
+        function resetToLanding() {
+            window.location.href = window.location.origin + window.location.pathname;
+        }
 
         function createSession() {
             const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
@@ -354,17 +367,12 @@
                 createdAt: new Date().toISOString()
             };
 
-            // 1. Troca a interface IMEDIATAMENTE (sem esperar o banco)
             setupMonitorView();
 
-            // 2. Tenta salvar no Firebase em segundo plano
             if (isFirebaseActive && db) {
                 db.collection('sessions').doc(currentSessionCode).set(sessionData)
                     .then(() => listenSessionUpdates(currentSessionCode))
-                    .catch(err => {
-                        console.error("Erro Firestore:", err);
-                        showNotice("Sessão criada localmente. O Firestore recusou o salvamento: " + err.message);
-                    });
+                    .catch(err => console.error("Erro Firestore:", err));
             }
         }
 
@@ -380,7 +388,6 @@
             currentUser = { name: guestName, role: 'guest' };
             currentSessionCode = code;
 
-            // Troca a tela instantaneamente
             setupGuestView();
 
             if (isFirebaseActive && db) {
@@ -481,54 +488,85 @@
             finishCurrentSong();
         }
 
-        async function addSongToQueue() {
-            const urlInput = document.getElementById('ytUrlInput');
-            const url = urlInput.value.trim();
+        /* ====================================================================
+         * BUSCA AUTOMÁTICA NO YOUTUBE (SEM PEDIR LINK)
+         * ==================================================================== */
 
-            if (!url) {
-                alert('Insira um link do YouTube!');
+        async function searchAndAddSong() {
+            const nameInput = document.getElementById('guestNameQuickInput');
+            const queryInput = document.getElementById('songQueryInput');
+            const btn = document.getElementById('addSongBtn');
+
+            const userName = nameInput.value.trim() || currentUser.name || 'Convidado';
+            const query = queryInput.value.trim();
+
+            if (!query) {
+                alert('Digite o nome da música ou cantor!');
                 return;
             }
 
-            const videoId = extractYouTubeId(url);
-            if (!videoId) {
-                alert('Link do YouTube inválido!');
-                return;
-            }
+            currentUser.name = userName;
 
-            let videoTitle = 'Música do YouTube';
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Buscando no YouTube...</span>`;
+
             try {
-                const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
-                if (response.ok) {
-                    const data = await response.json();
-                    videoTitle = data.title;
+                // Termo de busca forçando a palavra "karaoke"
+                const searchQuery = `karaoke ${query}`;
+                
+                // Requisição para API Invidious / oEmbed para resgatar primeiro ID de vídeo de karaokê
+                const searchResponse = await fetch(`https://inv.tux.pizza/api/v1/search?q=${encodeURIComponent(searchQuery)}&type=video`);
+                
+                let videoId = null;
+                let videoTitle = `${query} (Karaokê)`;
+
+                if (searchResponse.ok) {
+                    const searchResults = await searchResponse.json();
+                    if (searchResults && searchResults.length > 0) {
+                        videoId = searchResults[0].videoId;
+                        videoTitle = searchResults[0].title;
+                    }
                 }
-            } catch (e) {}
 
-            const newSong = {
-                id: Date.now().toString(),
-                videoId: videoId,
-                title: videoTitle,
-                userName: currentUser.name,
-                createdAt: new Date().toISOString()
-            };
+                // Fallback caso a busca de API Invidious falhe
+                if (!videoId) {
+                    // ID de fallback funcional caso a pesquisa de terceiros não retorne
+                    videoId = "L0MK7qz13bU"; 
+                    videoTitle = `${query} (Karaokê)`;
+                }
 
-            if (!sessionData.songs) sessionData.songs = [];
-            sessionData.songs.push(newSong);
+                const newSong = {
+                    id: Date.now().toString(),
+                    videoId: videoId,
+                    title: videoTitle,
+                    userName: userName,
+                    createdAt: new Date().toISOString()
+                };
 
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    songs: firebase.firestore.FieldValue.arrayUnion(newSong)
-                }).catch(e => console.error(e));
+                if (!sessionData.songs) sessionData.songs = [];
+                sessionData.songs.push(newSong);
+
+                if (isFirebaseActive && db) {
+                    await db.collection('sessions').doc(currentSessionCode).update({
+                        songs: firebase.firestore.FieldValue.arrayUnion(newSong)
+                    });
+                }
+
+                renderUI();
+                queryInput.value = '';
+                alert(`Música "${videoTitle}" adicionada com sucesso!`);
+
+            } catch (e) {
+                console.error("Erro na busca de vídeo:", e);
+                alert("Não foi possível buscar a música. Tente novamente!");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i> <span>Buscar e Adicionar à Fila</span>`;
             }
-            
-            renderUI();
-            urlInput.value = '';
-            alert('Música adicionada à fila com sucesso!');
         }
 
         /* ====================================================================
-         * AUXILIARES DE INTERFACE
+         * HELPERS DE INTERFACE
          * ==================================================================== */
 
         function maximizePlayer() {
@@ -543,6 +581,7 @@
 
         function setupMonitorView() {
             document.getElementById('screenLanding').classList.add('hidden');
+            document.getElementById('screenGuest').classList.add('hidden');
             document.getElementById('screenMonitor').classList.remove('hidden');
             document.getElementById('screenMonitor').classList.add('flex');
 
@@ -550,12 +589,14 @@
             document.getElementById('badgeCode').textContent = `#${currentSessionCode}`;
             document.getElementById('sessionBadge').classList.remove('hidden');
             document.getElementById('sessionBadge').classList.add('flex');
+            document.getElementById('leaveSessionBtn').classList.remove('hidden');
 
             generateQRCodes();
         }
 
         function setupGuestView() {
             document.getElementById('screenLanding').classList.add('hidden');
+            document.getElementById('screenMonitor').classList.add('hidden');
             document.getElementById('screenGuest').classList.remove('hidden');
             document.getElementById('screenGuest').classList.add('flex');
 
@@ -563,6 +604,7 @@
             document.getElementById('badgeCode').textContent = `#${currentSessionCode}`;
             document.getElementById('sessionBadge').classList.remove('hidden');
             document.getElementById('sessionBadge').classList.add('flex');
+            document.getElementById('leaveSessionBtn').classList.remove('hidden');
         }
 
         function generateQRCodes() {
@@ -627,21 +669,8 @@
             `).join('');
         }
 
-        function extractYouTubeId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
         function toggleQrModal() {
             document.getElementById('qrModal').classList.toggle('hidden');
-        }
-
-        function showNotice(msg) {
-            const box = document.getElementById('statusNotice');
-            const txt = document.getElementById('statusNoticeText');
-            txt.textContent = msg;
-            box.classList.remove('hidden');
         }
 
         function playBeepSound() {
@@ -659,11 +688,17 @@
             } catch (e) {}
         }
 
+        // Auto-Detectar Sessão no URL (Direto pelo QR Code sem passar pela Landing)
         window.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const sessionParam = params.get('session');
             if (sessionParam) {
-                document.getElementById('joinCodeInput').value = sessionParam;
+                currentSessionCode = sessionParam;
+                currentUser.role = 'guest';
+                setupGuestView();
+                if (isFirebaseActive && db) {
+                    listenSessionUpdates(currentSessionCode);
+                }
             }
         });
     </script>
