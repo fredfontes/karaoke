@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KARAOKE.TOP</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -70,7 +71,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-
+<h1>teste</h1>
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -101,11 +102,18 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
-        <!-- Banner de Diagnóstico e Erros -->
         <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
-            <div class="flex items-start gap-3">
-                <i class="fa-solid fa-triangle-exclamation text-lg text-amber-400 mt-0.5"></i>
-                <div id="errorAlertText">Aviso de conexão...</div>
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-lg text-amber-400 mt-0.5"></i>
+                    <div id="errorAlertText">Aviso de conexão...</div>
+                </div>
+                <button onclick="runFirebaseDiagnostic()" class="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-stethoscope"></i>
+                    <span>Testar Conexão</span>
+                </button>
+            </div>
+            <div id="diagnosticDetails" class="hidden mt-3 pt-3 border-t border-amber-500/20 text-[11px] space-y-1.5">
             </div>
         </div>
 
@@ -333,15 +341,18 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script>
-        const firebaseConfig = {
+        const defaultFirebaseConfig = {
             apiKey: "AIzaSyDeTcxcxo-2kAMpXHjGwXDhW03nNfbXA30",
             authDomain: "karaoke-top.firebaseapp.com",
-            projectId: "karaoke-top",
+            projectId: "karaoke",
             storageBucket: "karaoke-top.firebasestorage.app",
             messagingSenderId: "332269760759",
             appId: "1:332269760759:web:920ac88f96a910aa03a3f2",
             measurementId: "G-RRJME4DJRF"
         };
+
+        const targetDatabaseName = "karaoke-topzera";
+        const firebaseConfig = defaultFirebaseConfig;
 
         let db = null;
         let isFirebaseActive = false;
@@ -354,135 +365,27 @@
         let countdownInterval = null;
         let retryConnectionInterval = null;
 
-        // Função para garantir tempo limite nas chamadas do Firebase
-        function withTimeout(promise, ms = 6000, errorMessage = "Tempo limite de conexão excedido") {
-            let timeoutId;
-            const timeoutPromise = new Promise((_, reject) => {
-                timeoutId = setTimeout(() => reject(new Error(errorMessage)), ms);
-            });
-            return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
-        }
-
-        function initFirebase() {
-            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou no navegador."));
-            if (isFirebaseActive && db) return Promise.resolve();
-
-            if (!authPromise) {
-                authPromise = new Promise((resolve, reject) => {
-                    try {
-                        if (!firebase.apps.length) {
-                            firebase.initializeApp(firebaseConfig);
-                        }
-                        
-                        db = firebase.firestore();
-                        
-                        // O SEGREDO: Força o uso de HTTP Long Polling em vez de WebSockets!
-                        // Evita travamentos por firewall, iFrames e políticas do navegador.
-                        try {
-                            db.settings({ experimentalForceLongPolling: true });
-                        } catch (e) {
-                            console.warn("Aviso nas configurações do Firestore:", e);
-                        }
-
-                        // Tenta autenticar anonimamente com timeout estendido de 6s
-                        withTimeout(firebase.auth().signInAnonymously(), 6000, "Timeout ao conectar no Firebase Auth")
-                            .then(() => {
-                                isFirebaseActive = true;
-                                updateConnectionBadge('online', 'Nuvem Conectada');
-                                resolve();
-                            })
-                            .catch(err => {
-                                console.warn("Aviso Auth Firebase:", err.message);
-                                updateConnectionBadge('offline', 'Modo Local');
-                                reject(err);
-                            });
-                    } catch (e) {
-                        console.error("Exceção Firebase:", e);
-                        updateConnectionBadge('offline', 'Modo Offline');
-                        reject(e);
-                    }
-                });
-            }
-
-            return authPromise;
-        }
-
-        function updateConnectionBadge(state, text) {
+        function updateConnectionBadge(status, text) {
             const dot = document.getElementById('connectionDot');
-            const txt = document.getElementById('connectionStatusText');
-            if (!dot || !txt) return;
+            const textElem = document.getElementById('connectionStatusText');
+            if (!dot || !textElem) return;
 
-            txt.textContent = text;
-            if (state === 'online') {
-                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-            } else if (state === 'connecting') {
-                dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+            textElem.textContent = text;
+            
+            if (status === 'online') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+            } else if (status === 'connecting') {
+                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
             } else {
-                dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                dot.className = "w-2 h-2 rounded-full bg-slate-500";
             }
-        }
-
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('ytPlayer', {
-                height: '100%',
-                width: '100%',
-                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
-                events: {
-                    'onReady': () => { isPlayerReady = true; },
-                    'onStateChange': (e) => {
-                        if (e.data === YT.PlayerState.ENDED) {
-                            minimizePlayer();
-                            finishCurrentSong();
-                        }
-                    }
-                }
-            });
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') minimizePlayer();
-        });
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-            const toast = document.createElement('div');
-            
-            const bgClass = type === 'error' ? 'bg-red-950/90 border-red-500/40 text-red-200' :
-                            type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200' :
-                            'bg-slate-900/90 border-slate-700 text-slate-200';
-            
-            const icon = type === 'error' ? 'fa-circle-xmark text-red-400' :
-                         type === 'success' ? 'fa-circle-check text-emerald-400' :
-                         'fa-circle-info text-cyan-400';
-
-            toast.className = `pointer-events-auto flex items-center gap-3 border px-4 py-3 rounded-2xl text-xs font-semibold backdrop-blur-xl shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 ${bgClass}`;
-            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.remove('translate-y-4', 'opacity-0');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-4');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
         }
 
         function displayError(msg) {
             const box = document.getElementById('errorAlert');
             const txt = document.getElementById('errorAlertText');
-            if (txt && box) {
-                txt.innerHTML = msg;
-                box.classList.remove('hidden');
-            }
+            if (txt) txt.innerHTML = msg;
+            if (box) box.classList.remove('hidden');
         }
 
         function hideError() {
@@ -493,29 +396,190 @@
         function resetToLanding() {
             currentSessionCode = null;
             currentUser = { name: '', role: 'guest' };
-
-            if (retryConnectionInterval) clearInterval(retryConnectionInterval);
-
+            
             try {
-                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
-                    const url = new URL(window.location.href);
-                    url.searchParams.delete('session');
-                    window.history.pushState({}, '', url.pathname + url.search);
+                if (window.history && window.history.pushState) {
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.pushState({}, '', cleanUrl);
                 }
             } catch (e) {}
 
+            document.getElementById('screenLanding').classList.remove('hidden');
             document.getElementById('screenMonitor').classList.add('hidden');
             document.getElementById('screenGuest').classList.add('hidden');
-            document.getElementById('screenLanding').classList.remove('hidden');
             document.getElementById('sessionBadge').classList.add('hidden');
+            hideError();
+        }
 
-            if (player && isPlayerReady && typeof player.stopVideo === 'function') {
-                try { player.stopVideo(); } catch(err){}
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-emerald-500/90 border-emerald-400' : 
+                            type === 'error' ? 'bg-red-500/90 border-red-400' : 'bg-slate-800/90 border-slate-700';
+            
+            toast.className = `px-4 py-3 rounded-2xl border text-white text-xs font-semibold shadow-xl backdrop-blur-md transition-all transform translate-y-2 opacity-0 flex items-center gap-2 ${bgColor}`;
+            toast.innerHTML = `<span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        async function runFirebaseDiagnostic() {
+            const diagBox = document.getElementById('diagnosticDetails');
+            if (!diagBox) return;
+            diagBox.classList.remove('hidden');
+            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> A testar conexão com o banco karaoke-topzera...</p>';
+
+            let report = [];
+
+            if (typeof firebase === 'undefined') {
+                report.push('❌ <strong>SDK Firebase:</strong> Não foi possível carregar os scripts.');
+                diagBox.innerHTML = report.join('<br>');
+                return;
+            } else {
+                report.push('✅ <strong>SDK Firebase:</strong> Módulos carregados com sucesso.');
+            }
+
+            try {
+                const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+                report.push('✅ <strong>App Firebase:</strong> Inicializado no projeto: <code>' + firebaseConfig.projectId + '</code>.');
+            } catch (e) {
+                report.push('❌ <strong>App Firebase:</strong> Erro: ' + e.message);
+                diagBox.innerHTML = report.join('<br>');
+                return;
+            }
+
+            try {
+                const authRes = await Promise.race([
+                    firebase.auth().signInAnonymously(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação (6s)")), 6000))
+                ]);
+                report.push('✅ <strong>Auth Anónimo:</strong> Conectado com sucesso (UID: <code>' + authRes.user.uid + '</code>).');
+            } catch (e) {
+                let hint = '';
+                if (e.code === 'auth/operation-not-allowed') {
+                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Authentication > Sign-in method e ative a opção <strong>Anônimo</strong>.';
+                } else if (e.message && e.message.includes('Timeout')) {
+                    hint = '<br>👉 <u>Ação necessária:</u> Desative temporariamente AdBlockers ou extensões que possam estar a bloquear requisições.';
+                }
+                report.push('❌ <strong>Auth Anónimo:</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
+            }
+
+            try {
+                const app = firebase.app();
+                try {
+                    db = firebase.firestore(app, targetDatabaseName);
+                } catch (dbErr) {
+                    db = firebase.firestore();
+                }
+
+                try {
+                    db.settings({ experimentalForceLongPolling: true });
+                } catch(e) {}
+
+                const testDocRef = db.collection('sessions').doc('_diagnostic_test');
+                await Promise.race([
+                    testDocRef.set({ test: true, database: targetDatabaseName, timestamp: new Date().toISOString() }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação na base karaoke-topzera (6s)")), 6000))
+                ]);
+                report.push('✅ <strong>Firestore DB (<code>' + targetDatabaseName + '</code>):</strong> Leitura e Escrita a funcionar perfeitamente!');
+            } catch (e) {
+                let hint = '';
+                if (e.code === 'permission-denied') {
+                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Firestore Database > selecione a base <strong>karaoke-topzera</strong> > aba Rules e altere para <code>allow read, write: if true;</code>';
+                } else if (e.code === 'not-found') {
+                    hint = '<br>👉 <u>Ação necessária:</u> A base de dados <strong>karaoke-topzera</strong> não foi encontrada. Verifique no Firebase Console.';
+                } else if (e.message && e.message.includes('Timeout')) {
+                    hint = '<br>👉 <u>Causas prováveis:</u><br>1. Alguma extensão/firewall no navegador está a bloquear requisições HTTP.<br>2. Verifique se as regras da base <code>karaoke-topzera</code> foram publicadas.';
+                }
+                report.push('❌ <strong>Firestore DB (<code>' + targetDatabaseName + '</code>):</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
+            }
+
+            diagBox.innerHTML = report.join('<br>');
+        }
+
+        function initFirebase() {
+            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou no navegador."));
+            if (isFirebaseActive && db) return Promise.resolve();
+
+            if (!authPromise) {
+                authPromise = new Promise((resolve, reject) => {
+                    try {
+                        const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+                        
+                        try {
+                            db = firebase.firestore(app, targetDatabaseName);
+                        } catch (e) {
+                            db = firebase.firestore();
+                        }
+                        
+                        try {
+                            db.settings({ experimentalForceLongPolling: true });
+                        } catch (e) {}
+
+                        firebase.auth().signInAnonymously()
+                            .then(() => {
+                                isFirebaseActive = true;
+                                updateConnectionBadge('online', 'Nuvem Conectada (' + targetDatabaseName + ')');
+                                resolve();
+                            })
+                            .catch(err => {
+                                console.warn("Aviso Auth Firebase:", err);
+                                updateConnectionBadge('offline', 'Modo Local');
+                                reject(err);
+                            });
+                    } catch (e) {
+                        console.error("Exceção Firebase:", e);
+                        updateConnectionBadge('offline', 'Modo Local');
+                        reject(e);
+                    }
+                });
+            }
+
+            return authPromise;
+        }
+
+        async function syncSessionToCloudInBackground(code, data) {
+            try {
+                await initFirebase();
+                if (db) {
+                    await Promise.race([
+                        db.collection('sessions').doc(code).set(data),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("O servidor do Firestore (" + targetDatabaseName + ") não respondeu a tempo (timeout de 6s).")), 6000))
+                    ]);
+                    
+                    updateConnectionBadge('online', 'Nuvem Conectada');
+                    hideError();
+                    listenSessionUpdates(code);
+                    showToast(`Sessão #${code} conectada na nuvem (${targetDatabaseName})!`, 'success');
+                }
+            } catch (err) {
+                console.warn("Sincronização em segundo plano:", err);
+                updateConnectionBadge('offline', 'Modo Local');
+                
+                const errCode = err.code ? `[${err.code}] ` : '';
+                const errDetail = `${errCode}${err.message}`;
+                
+                displayError(`
+                    <strong>Falha ao conectar no Firestore (${targetDatabaseName}):</strong> ${errDetail}
+                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta em Modo Local. Clique em <strong>"Testar Conexão"</strong> ao lado para verificar a base.</span>
+                `);
             }
         }
 
         async function createSession() {
-            const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
+            const hostNameInput = document.getElementById('hostNameInput');
+            const hostName = hostNameInput ? (hostNameInput.value.trim() || 'Anfitrião') : 'Anfitrião';
             
             currentUser = { name: hostName, role: 'host' };
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -528,38 +592,10 @@
                 createdAt: new Date().toISOString()
             };
 
-            // 1. Muda de tela e configura o monitor INSTANTANEAMENTE (Interface Responsiva)
             updateUrlSession(currentSessionCode);
             setupMonitorView();
-            updateConnectionBadge('connecting', 'Conectando Nuvem...');
-
-            // 2. Tenta sincronizar com o Firebase em segundo plano sem travar a interface
+            
             syncSessionToCloudInBackground(currentSessionCode, sessionData);
-        }
-
-        async function syncSessionToCloudInBackground(code, data) {
-            try {
-                await initFirebase();
-                if (db) {
-                    // Grava no Firestore com tempo limite de 5 segundos
-                    await withTimeout(db.collection('sessions').doc(code).set(data), 5000, "O servidor do Firestore não respondeu a tempo.");
-                    console.log("Sessão gravada no Firestore:", code);
-                    
-                    updateConnectionBadge('online', 'Nuvem Conectada');
-                    hideError();
-                    listenSessionUpdates(code);
-                    showToast(`Sessão #${code} conectada na nuvem!`, 'success');
-                }
-            } catch (err) {
-                console.warn("Sincronização em segundo plano:", err);
-                updateConnectionBadge('offline', 'Modo Local');
-                
-                const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
-                displayError(`
-                    <strong>Falha ao conectar no Firebase:</strong> ${errDetail}
-                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta em Modo Local. Para conectar os celulares, certifique-se de ativar o <u>Firestore Database</u> e publicar as <u>Rules</u> no Console do Firebase.</span>
-                `);
-            }
         }
 
         async function joinSession() {
@@ -619,8 +655,8 @@
                         updateConnectionBadge('connecting', 'A procurar sala...');
                         displayError(`
                             <div class="flex flex-col gap-1">
-                                <span>A procurar a Sessão <strong>#${code}</strong> na TV...</span>
-                                <span class="text-[11px] opacity-80">A sala #${code} ainda não foi sincronizada na nuvem pela TV. Certifique-se de que a base Firestore está criada no Firebase Console.</span>
+                                <span>A procurar a Sessão <strong>#${code}</strong> na TV (${targetDatabaseName})...</span>
+                                <span class="text-[11px] opacity-80">A sala #${code} ainda não foi sincronizada na nuvem pela TV. Certifique-se de que as regras da base ${targetDatabaseName} estão liberadas.</span>
                             </div>
                         `);
 
@@ -644,7 +680,7 @@
                 console.warn("Aviso no Firestore listener:", err);
                 updateConnectionBadge('offline', 'Modo Local');
                 const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
-                displayError(`<strong>Erro no Firestore:</strong> ${errDetail}`);
+                displayError(`<strong>Erro no Firestore (${targetDatabaseName}):</strong> ${errDetail}`);
             });
         }
 
@@ -927,6 +963,32 @@
                 osc.stop(ctx.currentTime + 0.15);
             } catch (e) {}
         }
+
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('ytPlayer', {
+                height: '100%',
+                width: '100%',
+                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
+                events: {
+                    'onReady': () => { isPlayerReady = true; },
+                    'onStateChange': (e) => {
+                        if (e.data === YT.PlayerState.ENDED) {
+                            minimizePlayer();
+                            finishCurrentSong();
+                        }
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') minimizePlayer();
+        });
 
         window.addEventListener('DOMContentLoaded', async () => {
             initFirebase().catch(console.warn);
