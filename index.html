@@ -71,7 +71,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-<h1>teste</h1>
+
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -351,7 +351,6 @@
             measurementId: "G-RRJME4DJRF"
         };
 
-        const targetDatabaseName = "karaoke-topzera";
         const firebaseConfig = defaultFirebaseConfig;
 
         let db = null;
@@ -438,7 +437,7 @@
             const diagBox = document.getElementById('diagnosticDetails');
             if (!diagBox) return;
             diagBox.classList.remove('hidden');
-            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> A testar conexão com o banco karaoke-topzera...</p>';
+            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> A testar conexão com o Cloud Firestore...</p>';
 
             let report = [];
 
@@ -476,12 +475,7 @@
             }
 
             try {
-                const app = firebase.app();
-                try {
-                    db = firebase.firestore(app, targetDatabaseName);
-                } catch (dbErr) {
-                    db = firebase.firestore();
-                }
+                db = firebase.firestore();
 
                 try {
                     db.settings({ experimentalForceLongPolling: true });
@@ -489,20 +483,20 @@
 
                 const testDocRef = db.collection('sessions').doc('_diagnostic_test');
                 await Promise.race([
-                    testDocRef.set({ test: true, database: targetDatabaseName, timestamp: new Date().toISOString() }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação na base karaoke-topzera (6s)")), 6000))
+                    testDocRef.set({ test: true, timestamp: new Date().toISOString() }),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação no Firestore (6s)")), 6000))
                 ]);
-                report.push('✅ <strong>Firestore DB (<code>' + targetDatabaseName + '</code>):</strong> Leitura e Escrita a funcionar perfeitamente!');
+                report.push('✅ <strong>Firestore DB:</strong> Leitura e Escrita a funcionar perfeitamente!');
             } catch (e) {
                 let hint = '';
                 if (e.code === 'permission-denied') {
-                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Firestore Database > selecione a base <strong>karaoke-topzera</strong> > aba Rules e altere para <code>allow read, write: if true;</code>';
+                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Firestore Database > aba Rules e altere para <code>allow read, write: if true;</code>';
                 } else if (e.code === 'not-found') {
-                    hint = '<br>👉 <u>Ação necessária:</u> A base de dados <strong>karaoke-topzera</strong> não foi encontrada. Verifique no Firebase Console.';
+                    hint = '<br>👉 <u>Ação necessária:</u> A base de dados Firestore não foi encontrada. Verifique se criou a base no Firebase Console.';
                 } else if (e.message && e.message.includes('Timeout')) {
-                    hint = '<br>👉 <u>Causas prováveis:</u><br>1. Alguma extensão/firewall no navegador está a bloquear requisições HTTP.<br>2. Verifique se as regras da base <code>karaoke-topzera</code> foram publicadas.';
+                    hint = '<br>👉 <u>Causas prováveis:</u><br>1. Alguma extensão/firewall no navegador está a bloquear requisições HTTP.<br>2. Verifique se as regras do Firestore foram publicadas.';
                 }
-                report.push('❌ <strong>Firestore DB (<code>' + targetDatabaseName + '</code>):</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
+                report.push('❌ <strong>Firestore DB:</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
             }
 
             diagBox.innerHTML = report.join('<br>');
@@ -517,11 +511,7 @@
                     try {
                         const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
                         
-                        try {
-                            db = firebase.firestore(app, targetDatabaseName);
-                        } catch (e) {
-                            db = firebase.firestore();
-                        }
+                        db = firebase.firestore();
                         
                         try {
                             db.settings({ experimentalForceLongPolling: true });
@@ -530,7 +520,7 @@
                         firebase.auth().signInAnonymously()
                             .then(() => {
                                 isFirebaseActive = true;
-                                updateConnectionBadge('online', 'Nuvem Conectada (' + targetDatabaseName + ')');
+                                updateConnectionBadge('online', 'Nuvem Conectada');
                                 resolve();
                             })
                             .catch(err => {
@@ -555,13 +545,13 @@
                 if (db) {
                     await Promise.race([
                         db.collection('sessions').doc(code).set(data),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("O servidor do Firestore (" + targetDatabaseName + ") não respondeu a tempo (timeout de 6s).")), 6000))
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("O servidor do Firestore não respondeu a tempo (timeout de 6s).")), 6000))
                     ]);
                     
                     updateConnectionBadge('online', 'Nuvem Conectada');
                     hideError();
                     listenSessionUpdates(code);
-                    showToast(`Sessão #${code} conectada na nuvem (${targetDatabaseName})!`, 'success');
+                    showToast(`Sessão #${code} conectada na nuvem!`, 'success');
                 }
             } catch (err) {
                 console.warn("Sincronização em segundo plano:", err);
@@ -571,7 +561,7 @@
                 const errDetail = `${errCode}${err.message}`;
                 
                 displayError(`
-                    <strong>Falha ao conectar no Firestore (${targetDatabaseName}):</strong> ${errDetail}
+                    <strong>Falha ao conectar no Firestore:</strong> ${errDetail}
                     <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta em Modo Local. Clique em <strong>"Testar Conexão"</strong> ao lado para verificar a base.</span>
                 `);
             }
