@@ -391,12 +391,14 @@
     <!-- Firebase SDKs (Compat v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDeTcxcxo-2kAMpXHjGwXDhW03nNfbXA30",
             authDomain: "karaoke-top.firebaseapp.com",
+            databaseURL: "https://karaoke-top-default-rtdb.firebaseio.com",
             projectId: "karaoke-top",
             storageBucket: "karaoke-top.firebasestorage.app",
             messagingSenderId: "332269760759",
@@ -404,6 +406,7 @@
             measurementId: "G-RRJME4DJRF"
         };
 
+        let rtdb = null;
         let db = null;
         let isFirebaseActive = false;
         let authPromise = null;
@@ -416,6 +419,7 @@
         let retryConnectionInterval = null;
         let sseSource = null;
         let pollInterval = null;
+        let rtdbPollingInterval = null;
 
         // Controle de execução do countdown e alerta no celular
         let isCountdownActive = false;
@@ -450,13 +454,36 @@
             if (modal) modal.classList.add('hidden');
         }
 
+        function syncSessionToCloud(code, data) {
+            if (!code || !data) return;
+
+            // 1. Firebase Realtime Database SDK (Tempo Real para GitHub Pages e Celular)
+            if (rtdb) {
+                try {
+                    rtdb.ref('sessions/' + code).set(data).catch(() => {});
+                } catch(e) {}
+            }
+
+            // 2. Firebase Realtime Database REST (Infalível para conexões estáticas)
+            try {
+                fetch(`https://karaoke-top-default-rtdb.firebaseio.com/sessions/${code}.json`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).catch(() => {});
+            } catch(e) {}
+
+            // 3. Servidor Local (se estiver rodando via Node.js)
+            syncSessionToServer(data);
+        }
+
         function syncSessionToServer(data) {
             if (!currentSessionCode) return;
             fetch(`/api/sessions/${currentSessionCode}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
-            }).catch(e => console.warn('Aviso sincronização servidor:', e));
+            }).catch(() => {});
         }
 
         function initSseFallback(code) {
@@ -526,33 +553,18 @@
                         firebase.initializeApp(firebaseConfig);
                     }
                     
-                    db = firebase.firestore();
-                    
-                    try {
-                        db.settings({ experimentalForceLongPolling: true });
-                    } catch (e) {}
+                    if (firebase.database) {
+                        rtdb = firebase.database();
+                        isFirebaseActive = true;
+                    }
 
-                    withTimeout(firebase.auth().signInAnonymously(), 3000, "Timeout Firebase Auth")
-                        .then(async () => {
-                            // Verifica se a base de dados Firestore realmente existe e responde
-                            try {
-                                await withTimeout(db.collection('sessions').limit(1).get(), 2000, "Firestore indisponível");
-                                isFirebaseActive = true;
-                                console.log("Nuvem Firebase Firestore ativa.");
-                            } catch(err) {
-                                console.warn("Firestore database não está provisionado na nuvem:", err.message);
-                                isFirebaseActive = false;
-                            }
-                            resolve();
-                        })
-                        .catch(err => {
-                            console.warn("Aviso Auth Firebase:", err.message);
-                            isFirebaseActive = false;
-                            resolve();
-                        });
+                    if (firebase.firestore) {
+                        try { db = firebase.firestore(); } catch(e) {}
+                    }
+
+                    resolve();
                 } catch (e) {
                     console.warn("Exceção Firebase:", e);
-                    isFirebaseActive = false;
                     resolve();
                 }
             });
@@ -718,6 +730,7 @@
                 host: hostName,
                 songs: [],
                 currentSong: null,
+                status: 'idle',
                 createdAt: new Date().toISOString()
             };
 
@@ -727,35 +740,11 @@
             updateConnectionBadge('online', 'Conectado');
             hideError();
 
-            // 2. Salva a sessão no servidor imediatamente
-            try {
-                await fetch(`/api/sessions/${currentSessionCode}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(sessionData)
-                });
-            } catch (err) {
-                console.warn("Erro ao registrar sessão no servidor:", err);
-            }
+            // 2. Salva e sincroniza na nuvem (Firebase RTDB + Servidor)
+            syncSessionToCloud(currentSessionCode, sessionData);
 
             // 3. Conecta listeners de tempo real
             listenSessionUpdates(currentSessionCode);
-
-            // 4. Se Firebase estiver disponível, sincroniza em segundo plano
-            syncSessionToCloudInBackground(currentSessionCode, sessionData);
-        }
-
-        async function syncSessionToCloudInBackground(code, data) {
-            syncSessionToServer(data);
-
-            if (!isFirebaseActive || !db) return;
-
-            try {
-                await withTimeout(db.collection('sessions').doc(code).set(data), 4000, "Timeout Firestore");
-                console.log("Sessão sincronizada no Firestore:", code);
-            } catch (err) {
-                console.warn("Sincronização Firestore opcional ignorada:", err.message);
-            }
         }
 
         async function joinSession() {
@@ -779,6 +768,22 @@
 
             listenSessionUpdates(currentSessionCode);
 
+            // 1. Tenta carregar do Firebase Realtime Database (Nuvem GitHub Pages)
+            try {
+                const rtdbRes = await fetch(`https://karaoke-top-default-rtdb.firebaseio.com/sessions/${currentSessionCode}.json`);
+                if (rtdbRes.ok) {
+                    const data = await rtdbRes.json();
+                    if (data && data.code === currentSessionCode) {
+                        sessionData = data;
+                        renderUI();
+                        updateConnectionBadge('online', 'Conectado');
+                        hideError();
+                        return;
+                    }
+                }
+            } catch(e) {}
+
+            // 2. Tenta carregar do servidor local
             try {
                 const res = await fetch(`/api/sessions/${currentSessionCode}`);
                 if (res.ok) {
@@ -803,7 +808,7 @@
                         </div>
                     `);
                 }
-            }, 3000);
+            }, 3500);
         }
 
         function updateUrlSession(code) {
@@ -820,20 +825,42 @@
             initSseFallback(code);
             startSessionPolling(code);
 
-            if (isFirebaseActive && db) {
+            // 1. Listener WebSockets do Firebase Realtime Database
+            if (rtdb) {
                 try {
-                    db.collection('sessions').doc(code).onSnapshot((doc) => {
-                        if (doc.exists) {
+                    rtdb.ref('sessions/' + code).on('value', (snapshot) => {
+                        const val = snapshot.val();
+                        if (val && val.code === code) {
                             hideError();
                             updateConnectionBadge('online', 'Conectado');
-                            sessionData = doc.data();
+                            sessionData = val;
                             renderUI();
                         }
-                    }, (err) => {
-                        console.warn("Aviso no Firestore listener:", err.message);
                     });
-                } catch(e) {}
+                } catch(e) {
+                    console.warn("RTDB listener aviso:", e);
+                }
             }
+
+            // 2. Polling no Firebase RTDB (Infalível para o GitHub Pages)
+            if (rtdbPollingInterval) clearInterval(rtdbPollingInterval);
+            rtdbPollingInterval = setInterval(() => {
+                if (!currentSessionCode || currentSessionCode !== code) {
+                    clearInterval(rtdbPollingInterval);
+                    return;
+                }
+                fetch(`https://karaoke-top-default-rtdb.firebaseio.com/sessions/${code}.json`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(val => {
+                        if (val && val.code === code) {
+                            hideError();
+                            updateConnectionBadge('online', 'Conectado');
+                            sessionData = val;
+                            renderUI();
+                        }
+                    })
+                    .catch(() => {});
+            }, 2000);
         }
 
         function renderUI() {
@@ -965,17 +992,8 @@
             // 2. Dispara a reprodução do vídeo
             playVideoInPlayer(currentSong.videoId);
 
-            // 3. Sincroniza estado no servidor e na nuvem
-            syncSessionToServer(sessionData);
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    songs: sessionData.songs,
-                    currentSong: currentSong,
-                    countdown: null,
-                    status: 'playing'
-                }).catch(e => console.error(e));
-            }
+            // 3. Sincroniza estado na nuvem (GitHub Pages / Firebase RTDB) e no servidor local
+            syncSessionToCloud(currentSessionCode, sessionData);
         }
 
         function playVideoInPlayer(videoId) {
@@ -1013,16 +1031,8 @@
             minimizePlayer();
             document.getElementById('currentSongBar').classList.add('hidden');
 
+            syncSessionToCloud(currentSessionCode, sessionData);
             fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
-            syncSessionToServer(sessionData);
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    currentSong: null,
-                    countdown: null,
-                    status: 'idle'
-                }).catch(e => console.error(e));
-            }
 
             checkQueueState();
         }
@@ -1042,16 +1052,8 @@
             sessionData.status = 'idle';
             document.getElementById('currentSongBar').classList.add('hidden');
 
+            syncSessionToCloud(currentSessionCode, sessionData);
             fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
-            syncSessionToServer(sessionData);
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    currentSong: null,
-                    countdown: null,
-                    status: 'idle'
-                }).catch(e => console.error(e));
-            }
 
             showToast('Música pulada!', 'info');
 
@@ -1083,16 +1085,8 @@
             document.getElementById('currentSongBar').classList.add('hidden');
             document.getElementById('playerEmptyState').classList.remove('hidden');
 
+            syncSessionToCloud(currentSessionCode, sessionData);
             fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
-            syncSessionToServer(sessionData);
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    currentSong: null,
-                    countdown: null,
-                    status: 'idle'
-                }).catch(e => console.error(e));
-            }
 
             showToast('Música fechada.', 'info');
         }
@@ -1170,32 +1164,8 @@
             sessionData.songs.push(newSong);
             renderUI();
 
-            // Envia para o servidor local com broadcast instantâneo
-            try {
-                const res = await fetch(`/api/sessions/${currentSessionCode}/songs`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newSong)
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.session) {
-                        sessionData = data.session;
-                        renderUI();
-                    }
-                }
-            } catch (err) {
-                console.warn("Aviso ao enviar para o servidor:", err);
-                syncSessionToServer(sessionData);
-            }
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    songs: sessionData.songs
-                }).catch(err => {
-                    console.warn("Música espelhada no Firebase falhou:", err.message);
-                });
-            }
+            // Sincroniza fila na nuvem (GitHub Pages / Firebase RTDB) e servidor local
+            syncSessionToCloud(currentSessionCode, sessionData);
 
             renderUI();
             queryInput.value = '';
@@ -1425,6 +1395,21 @@
 
                     listenSessionUpdates(currentSessionCode);
 
+                    // 1. Tenta carregar da nuvem Firebase Realtime Database (GitHub Pages)
+                    try {
+                        const rtdbRes = await fetch(`https://karaoke-top-default-rtdb.firebaseio.com/sessions/${currentSessionCode}.json`);
+                        if (rtdbRes.ok) {
+                            const data = await rtdbRes.json();
+                            if (data && data.code === currentSessionCode) {
+                                sessionData = data;
+                                renderUI();
+                                updateConnectionBadge('online', 'Conectado');
+                                hideError();
+                            }
+                        }
+                    } catch(e) {}
+
+                    // 2. Tenta carregar do servidor local se disponível
                     try {
                         const res = await fetch(`/api/sessions/${currentSessionCode}`);
                         if (res.ok) {
@@ -1448,7 +1433,7 @@
                                 </div>
                             `);
                         }
-                    }, 3500);
+                    }, 4000);
                 }
             } catch(e) {
                 console.warn("Aviso na leitura de parâmetros de URL:", e);
