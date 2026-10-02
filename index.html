@@ -1092,44 +1092,67 @@
         }
 
         async function fetchYouTubeVideoId(query) {
+            // Se o usuário colou uma URL do YouTube ou ID direto de 11 caracteres
             const urlMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
             if (urlMatch && urlMatch[1]) {
-                return { videoId: urlMatch[1], title: "Música Selecionada" };
+                return { videoId: urlMatch[1], title: "Música Selecionada via Link" };
+            }
+
+            if (/^[a-zA-Z0-9_-]{11}$/.test(query.trim())) {
+                return { videoId: query.trim(), title: "Música Selecionada" };
             }
 
             const searchTerm = query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`;
 
-            // 1. Busca via proxy no servidor local
+            // 1. Busca via proxy no servidor local (rápido, com timeout de 2s)
             try {
-                const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 2000);
+                const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
                     const data = await response.json();
                     if (data && data.videoId) {
                         return { videoId: data.videoId, title: data.title || searchTerm };
                     }
                 }
-            } catch (err) {
-                console.warn("Busca via servidor indisponível:", err);
-            }
+            } catch (err) {}
 
-            // 2. Busca via Piped API
-            try {
-                const response = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchTerm)}&filter=videos`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.items && data.items.length > 0) {
-                        const firstVideo = data.items[0];
-                        const videoId = firstVideo.url ? firstVideo.url.replace('/watch?v=', '') : null;
-                        if (videoId) {
-                            return { videoId: videoId, title: firstVideo.title || searchTerm };
+            // 2. Instâncias públicas Piped com CORS liberado para busca direto do navegador (GitHub Pages)
+            const pipedEndpoints = [
+                'https://pipedapi.ducks.party',
+                'https://api.piped.private.coffee',
+                'https://pipedapi.adminforge.de'
+            ];
+
+            for (const endpoint of pipedEndpoints) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 3500);
+                    const response = await fetch(`${endpoint}/search?q=${encodeURIComponent(searchTerm)}&filter=videos`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.items && data.items.length > 0) {
+                            for (const item of data.items) {
+                                if (item && item.url) {
+                                    const vidId = item.url.replace('/watch?v=', '').split('&')[0];
+                                    if (vidId && vidId.length === 11) {
+                                        return { videoId: vidId, title: item.title || searchTerm };
+                                    }
+                                }
+                            }
                         }
                     }
+                } catch (err) {
+                    console.warn(`Busca via ${endpoint} falhou, tentando próxima...`);
                 }
-            } catch (err) {
-                console.warn("Busca via Piped indisponível:", err);
             }
 
-            return { videoId: "L0MK7qz13bU", title: searchTerm };
+            throw new Error("Não foi possível localizar o vídeo para essa busca. Tente digitar o nome completo ou colar o link do YouTube.");
         }
 
         async function searchAndAddSong() {
@@ -1150,7 +1173,15 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Procurando música...</span>`;
 
-            const songResult = await fetchYouTubeVideoId(query);
+            let songResult;
+            try {
+                songResult = await fetchYouTubeVideoId(query);
+            } catch (err) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-plus text-sm"></i> <span>Adicionar à Fila</span>`;
+                showToast(err.message, 'error');
+                return;
+            }
 
             const newSong = {
                 id: Date.now().toString(),
