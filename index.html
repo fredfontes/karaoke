@@ -72,33 +72,37 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white overflow-x-hidden">
 
-    <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-[1px] shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-all">
-                    <div class="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
-                        <i class="fa-solid fa-record-vinyl text-pink-400 text-lg group-hover:rotate-180 transition-transform duration-700"></i>
-                    </div>
-                </div>
-                <span class="brand-disco text-2xl tracking-tight text-white">
-                    KARAOKE<span class="text-pink-500">.</span>TOP
-                </span>
-            </div>
+    <header class="bg-black/50 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 sm:py-3.5 flex flex-col sm:flex-row sm:justify-between items-center gap-2 sm:gap-4">
             
-            <div id="sessionBadge" class="hidden items-center gap-3">
-                <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md">
+            <!-- Barra de Status (Conectado, Sessão e Sair) - No mobile fica no topo para evitar qualquer rolagem horizontal -->
+            <div id="sessionBadge" class="hidden order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end items-center gap-2 flex-wrap">
+                <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md text-[11px]">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                    <span id="connectionStatusText" class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Conectando...</span>
+                    <span id="connectionStatusText" class="text-slate-400 font-semibold uppercase tracking-wider">Conectando...</span>
                     <span class="text-slate-600">|</span>
-                    <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Sessão:</span>
-                    <span id="badgeCode" class="font-mono font-extrabold text-pink-400 text-sm"></span>
+                    <span class="text-slate-400 font-semibold uppercase tracking-wider">Sessão:</span>
+                    <span id="badgeCode" class="font-mono font-extrabold text-pink-400 text-xs sm:text-sm"></span>
                 </div>
-                <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full font-semibold transition-all">
+                <button id="leaveSessionBtn" onclick="resetToLanding()" class="hidden text-xs bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3.5 py-1.5 rounded-full font-semibold transition-all shrink-0">
                     <i class="fa-solid fa-right-from-bracket mr-1"></i> Sair
                 </button>
             </div>
+
+            <!-- Título / Logotipo - Adaptativo (abaixo no mobile, esquerda no desktop) -->
+            <div class="order-2 sm:order-1 flex items-center justify-center sm:justify-start gap-2.5 cursor-pointer group shrink-0" onclick="resetToLanding()">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-[1px] shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-all">
+                    <div class="w-full h-full bg-slate-950 rounded-[15px] flex items-center justify-center">
+                        <i class="fa-solid fa-record-vinyl text-pink-400 text-base sm:text-lg group-hover:rotate-180 transition-transform duration-700"></i>
+                    </div>
+                </div>
+                <span class="brand-disco text-xl sm:text-2xl tracking-tight text-white">
+                    KARAOKE<span class="text-pink-500">.</span>TOP
+                </span>
+            </div>
+
         </div>
     </header>
 
@@ -222,9 +226,9 @@
                         </div>
 
                         <!-- Controles Flutuantes da Tela Cheia (100% sobreposta) -->
-                        <div id="fullscreenControlsBar" class="hidden absolute top-0 left-0 right-0 z-[70] p-4 md:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between pointer-events-none transition-all">
+                        <div id="fullscreenControlsBar" class="hidden absolute top-0 left-0 right-0 z-[70] p-4 md:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-start justify-between pointer-events-none transition-all">
                             <!-- Informações da música em execução -->
-                            <div class="pointer-events-auto flex items-center gap-3 bg-black/70 backdrop-blur-md border border-white/20 px-4 py-2 rounded-2xl max-w-sm md:max-w-md shadow-2xl">
+                            <div class="pointer-events-auto flex items-center gap-3 bg-black/75 backdrop-blur-md border border-white/20 px-4 py-2.5 rounded-2xl max-w-sm md:max-w-md shadow-2xl">
                                 <div class="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
                                     <i class="fa-solid fa-microphone-lines text-sm animate-pulse"></i>
                                 </div>
@@ -234,19 +238,33 @@
                                 </div>
                             </div>
 
-                            <!-- Botões de Ação por cima da tela cheia: Pular e Fechar (X) -->
-                            <div class="pointer-events-auto flex items-center gap-2.5">
-                                <!-- Botão Pular para a Próxima -->
-                                <button type="button" onclick="skipCurrentSong()" title="Pular para a Próxima Música da Fila" class="bg-black/80 hover:bg-pink-600 text-white text-xs md:text-sm font-bold py-2.5 px-3.5 md:px-4 rounded-2xl border border-white/20 hover:border-pink-400 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
-                                    <i class="fa-solid fa-forward-step text-sm"></i>
-                                    <span class="hidden sm:inline">Próxima Música</span>
-                                </button>
+                            <!-- Área de Interação: Botões Pular e Fechar + QR Code logo abaixo -->
+                            <div class="pointer-events-auto flex flex-col items-end gap-2.5">
+                                <!-- Botões de Ação -->
+                                <div class="flex items-center gap-2">
+                                    <!-- Botão Pular para a Próxima -->
+                                    <button type="button" onclick="skipCurrentSong()" title="Pular para a Próxima Música da Fila" class="bg-black/80 hover:bg-pink-600 text-white text-xs md:text-sm font-bold py-2 px-3 md:px-4 rounded-xl border border-white/20 hover:border-pink-400 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
+                                        <i class="fa-solid fa-forward-step text-sm"></i>
+                                        <span class="hidden sm:inline">Pular Próxima</span>
+                                    </button>
 
-                                <!-- Botão Fechar Música Atual (X) -->
-                                <button type="button" onclick="closeCurrentSong()" title="Fechar Música Atual e Sair da Tela Cheia" class="bg-red-950/80 hover:bg-red-600 text-red-200 hover:text-white text-xs md:text-sm font-bold py-2.5 px-3.5 md:px-4 rounded-2xl border border-red-500/40 hover:border-red-400 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
-                                    <i class="fa-solid fa-xmark text-base"></i>
-                                    <span class="hidden sm:inline">Fechar</span>
-                                </button>
+                                    <!-- Botão Fechar (apenas sai da tela cheia, a música continua tocando) -->
+                                    <button type="button" onclick="minimizePlayer()" title="Sair da Tela Cheia (a música continuará tocando normalmente)" class="bg-black/80 hover:bg-slate-800 text-white text-xs md:text-sm font-bold py-2 px-3 md:px-4 rounded-xl border border-white/20 hover:border-white/40 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
+                                        <i class="fa-solid fa-xmark text-base"></i>
+                                        <span class="hidden sm:inline">Fechar</span>
+                                    </button>
+                                </div>
+
+                                <!-- QR Code flutuante logo abaixo dos botões de ação -->
+                                <div class="bg-black/85 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl flex flex-col items-center gap-1.5 transition-all">
+                                    <div class="bg-white p-2 rounded-xl shadow-inner flex items-center justify-center">
+                                        <div id="fsQrcode"></div>
+                                    </div>
+                                    <div class="text-center leading-none mt-1">
+                                        <span class="text-[10px] font-black text-pink-400 uppercase tracking-wider block mb-1">Peça sua música</span>
+                                        <span id="fsSessionBadgeCode" class="text-xs md:text-sm font-extrabold text-white font-mono">#0000</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -619,7 +637,7 @@
         }
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeCurrentSong();
+            if (e.key === 'Escape') minimizePlayer();
         });
 
         // Ouvinte de mensagens de finalização de vídeo no iframe do YouTube
@@ -1216,7 +1234,7 @@
             // Cobre 100% da viewport por cima de absolutamente todo o site
             container.classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none', 'bg-black');
 
-            // Exibe a barra de controles flutuantes com Pular e Fechar (X)
+            // Exibe a barra de controles flutuantes com Pular, Fechar (X) e QR Code
             const controls = document.getElementById('fullscreenControlsBar');
             if (controls) controls.classList.remove('hidden');
 
@@ -1226,6 +1244,15 @@
                 const fsSinger = document.getElementById('fsSingerName');
                 if (fsTitle) fsTitle.textContent = sessionData.currentSong.title || 'Música do YouTube';
                 if (fsSinger) fsSinger.textContent = `Cantando agora: ${sessionData.currentSong.userName}`;
+            }
+
+            const fsCode = document.getElementById('fsSessionBadgeCode');
+            if (fsCode && currentSessionCode) fsCode.textContent = `#${currentSessionCode}`;
+
+            // Renderiza o QR Code da tela cheia caso ainda não tenha sido montado
+            const fsQrElem = document.getElementById('fsQrcode');
+            if (fsQrElem && fsQrElem.childNodes.length === 0 && currentSessionCode) {
+                generateQRCodes();
             }
 
             // Tenta ativar o modo fullscreen nativo do navegador
@@ -1290,17 +1317,25 @@
 
             const qrElem = document.getElementById('qrcode');
             const modalQrElem = document.getElementById('modalQrcode');
+            const fsQrElem = document.getElementById('fsQrcode');
 
-            qrElem.innerHTML = '';
-            modalQrElem.innerHTML = '';
+            if (qrElem) qrElem.innerHTML = '';
+            if (modalQrElem) modalQrElem.innerHTML = '';
+            if (fsQrElem) fsQrElem.innerHTML = '';
 
             if (typeof QRCode !== 'undefined') {
-                new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
-                new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
+                if (qrElem) new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
+                if (modalQrElem) new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
+                if (fsQrElem) new QRCode(fsQrElem, { text: sessionUrl, width: 130, height: 130 });
             }
 
-            document.getElementById('qrUrlText').textContent = sessionUrl;
-            document.getElementById('modalQrCodeText').textContent = sessionUrl;
+            const fsCode = document.getElementById('fsSessionBadgeCode');
+            if (fsCode) fsCode.textContent = `#${currentSessionCode}`;
+
+            const qrUrlText = document.getElementById('qrUrlText');
+            if (qrUrlText) qrUrlText.textContent = sessionUrl;
+            const modalQrText = document.getElementById('modalQrCodeText');
+            if (modalQrText) modalQrText.textContent = sessionUrl;
         }
 
         function renderQueueList() {
