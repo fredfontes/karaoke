@@ -1,0 +1,113 @@
+{
+  "1494": {
+    "songs": [],
+    "currentSong": {
+      "id": "1790952106727",
+      "videoId": "u3hsbdTkaDo",
+      "title": "Karaokê - Gabriel o Pensador -2345MEIA78",
+      "userName": "Fred",
+      "createdAt": "2026-10-02T14:41:46.727Z"
+    },
+    "code": "1494",
+    "host": "TESTE",
+    "createdAt": "2026-10-02T14:40:42.520Z",
+    "updatedAt": "2026-10-02T14:41:58.007Z",
+    "countdown": {
+      "singer": "Fred",
+      "title": "Evidências - Chitãozinho e Xororó (Karaokê Version)",
+      "songId": "1790952098236",
+      "seconds": 10,
+      "startedAt": 1790952108004
+    },
+    "status": "playing"
+  },
+  "3533": {
+    "songs": [],
+    "currentSong": null,
+    "code": "3533",
+    "host": "TESTE",
+    "createdAt": "2026-10-02T14:40:34.614Z",
+    "updatedAt": "2026-10-02T14:41:08.230Z"
+  },
+  "4829": {
+    "songs": [
+      {
+        "videoId": "tfhwXKd1W_o",
+        "title": "Evidencias",
+        "userName": "Maria"
+      }
+    ],
+    "currentSong": null,
+    "host": "Fred",
+    "code": "4829",
+    "updatedAt": "2026-10-02T14:32:10.585Z"
+  },
+  "5555": {
+    "songs": [
+      {
+        "id": "s1",
+        "title": "Evidencias",
+        "userName": "Maria"
+      }
+    ],
+    "currentSong": null,
+    "host": "Fred",
+    "code": "5555",
+    "updatedAt": "2026-10-02T14:38:47.637Z",
+    "countdown": null,
+    "status": "idle"
+  },
+  "6813": {
+    "songs": [
+      {
+        "id": "1790951598941",
+        "videoId": "tfhwXKd1W_o",
+        "title": "Evidências - Chitãozinho e Xororó (Karaokê Version)",
+        "userName": "Fred",
+        "createdAt": "2026-10-02T14:33:18.941Z"
+      },
+      {
+        "id": "1790951656372",
+        "videoId": "u3hsbdTkaDo",
+        "title": "Karaokê - Gabriel o Pensador -2345MEIA78",
+        "userName": "Fred",
+        "createdAt": "2026-10-02T14:34:16.372Z"
+      }
+    ],
+    "currentSong": null,
+    "code": "6813",
+    "host": "TESTE",
+    "createdAt": "2026-10-02T14:32:23.281Z",
+    "updatedAt": "2026-10-02T14:34:21.363Z"
+  },
+  "6939": {
+    "songs": [],
+    "currentSong": null,
+    "code": "6939",
+    "host": "TESTE",
+    "createdAt": "2026-10-02T14:41:51.725Z",
+    "updatedAt": "2026-10-02T14:43:50.263Z",
+    "countdown": null,
+    "status": "idle"
+  },
+  "7777": {
+    "songs": [
+      {
+        "id": "1",
+        "title": "Song 1",
+        "userName": "Maria"
+      },
+      {
+        "id": "2",
+        "title": "Song 2",
+        "userName": "Joao"
+      }
+    ],
+    "currentSong": null,
+    "host": "Fred",
+    "code": "7777",
+    "updatedAt": "2026-10-02T14:44:57.774Z",
+    "countdown": null,
+    "status": "idle"
+  }
+}

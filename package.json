@@ -1,0 +1,14 @@
+{
+  "name": "karaoke-top",
+  "version": "1.0.0",
+  "description": "Sistema de karaokê interativo para TV com fila colaborativa em tempo real pelo celular.",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node -e \"console.log('Build completed successfully')\""
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

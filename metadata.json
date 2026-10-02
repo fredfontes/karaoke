@@ -1,0 +1,8 @@
+{
+  "name": "KARAOKE.TOP",
+  "description": "Sistema de karaokê interativo para TV com fila colaborativa em tempo real pelo celular.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KARAOKE.TOP</title>
-    
+    <meta name="description" content="Sistema de karaokê interativo para TV com fila colaborativa em tempo real pelo celular.">
+    <meta property="og:title" content="KARAOKE.TOP">
+    <meta property="og:description" content="Sistema de karaokê interativo para TV com fila colaborativa em tempo real pelo celular.">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -102,19 +104,11 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
-        <!-- Error / Status Alert Banner -->
+        <!-- Banner de Diagnóstico e Erros -->
         <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
-            <div class="flex items-start justify-between gap-3">
-                <div class="flex items-start gap-3">
-                    <i class="fa-solid fa-triangle-exclamation text-lg text-amber-400 mt-0.5"></i>
-                    <div id="errorAlertText">Aviso de conexão...</div>
-                </div>
-                <button onclick="runFirebaseDiagnostic()" class="shrink-0 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1.5">
-                    <i class="fa-solid fa-stethoscope"></i>
-                    <span>Testar Conexão</span>
-                </button>
-            </div>
-            <div id="diagnosticDetails" class="hidden mt-3 pt-3 border-t border-amber-500/20 text-[11px] space-y-1.5">
+            <div class="flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-lg text-amber-400 mt-0.5"></i>
+                <div id="errorAlertText">Aviso de conexão...</div>
             </div>
         </div>
 
@@ -175,6 +169,7 @@
             </div>
         </section>
 
+        <!-- TELA 2: PAINEL DO MONITOR / TV -->
         <section id="screenMonitor" class="hidden flex-col gap-6">
             <div class="flex flex-wrap items-center justify-between gap-4 disco-card p-4 rounded-2xl">
                 <div>
@@ -226,12 +221,33 @@
                             <div id="ytPlayer"></div>
                         </div>
 
-                        <div id="fullscreenExitBtn" class="hidden absolute top-4 right-4 z-50">
-                            <button onclick="minimizePlayer()" class="bg-black/80 hover:bg-black text-white text-xs font-bold py-2.5 px-4 rounded-xl border border-white/20 shadow-2xl flex items-center gap-2 backdrop-blur-md">
-                                <span>Sair da Tela Cheia</span>
-                                <kbd class="bg-white/10 px-1.5 py-0.5 rounded text-[10px] text-slate-400">ESC</kbd>
-                                <i class="fa-solid fa-xmark text-sm ml-1"></i>
-                            </button>
+                        <!-- Controles Flutuantes da Tela Cheia (100% sobreposta) -->
+                        <div id="fullscreenControlsBar" class="hidden absolute top-0 left-0 right-0 z-[70] p-4 md:p-6 bg-gradient-to-b from-black/90 via-black/40 to-transparent flex items-center justify-between pointer-events-none transition-all">
+                            <!-- Informações da música em execução -->
+                            <div class="pointer-events-auto flex items-center gap-3 bg-black/70 backdrop-blur-md border border-white/20 px-4 py-2 rounded-2xl max-w-sm md:max-w-md shadow-2xl">
+                                <div class="w-8 h-8 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+                                    <i class="fa-solid fa-microphone-lines text-sm animate-pulse"></i>
+                                </div>
+                                <div class="truncate">
+                                    <h4 id="fsSongTitle" class="text-xs md:text-sm font-extrabold text-white truncate">---</h4>
+                                    <p id="fsSingerName" class="text-[10px] md:text-xs text-pink-400 font-bold truncate">Cantando agora: ---</p>
+                                </div>
+                            </div>
+
+                            <!-- Botões de Ação por cima da tela cheia: Pular e Fechar (X) -->
+                            <div class="pointer-events-auto flex items-center gap-2.5">
+                                <!-- Botão Pular para a Próxima -->
+                                <button type="button" onclick="skipCurrentSong()" title="Pular para a Próxima Música da Fila" class="bg-black/80 hover:bg-pink-600 text-white text-xs md:text-sm font-bold py-2.5 px-3.5 md:px-4 rounded-2xl border border-white/20 hover:border-pink-400 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
+                                    <i class="fa-solid fa-forward-step text-sm"></i>
+                                    <span class="hidden sm:inline">Próxima Música</span>
+                                </button>
+
+                                <!-- Botão Fechar Música Atual (X) -->
+                                <button type="button" onclick="closeCurrentSong()" title="Fechar Música Atual e Sair da Tela Cheia" class="bg-red-950/80 hover:bg-red-600 text-red-200 hover:text-white text-xs md:text-sm font-bold py-2.5 px-3.5 md:px-4 rounded-2xl border border-red-500/40 hover:border-red-400 shadow-2xl flex items-center gap-2 backdrop-blur-md transition-all active:scale-95 cursor-pointer">
+                                    <i class="fa-solid fa-xmark text-base"></i>
+                                    <span class="hidden sm:inline">Fechar</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -274,7 +290,21 @@
             </div>
         </section>
 
+        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO -->
         <section id="screenGuest" class="hidden flex-col gap-6 max-w-md mx-auto w-full">
+            
+            <!-- Banner de Status do Palco em Tempo Real -->
+            <div id="guestStageBanner" class="hidden p-4 rounded-2xl disco-card border border-pink-500/40 flex items-center gap-3.5 backdrop-blur-xl shadow-xl transition-all">
+                <div id="guestStageIcon" class="w-11 h-11 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 text-xl border border-pink-500/30">
+                    <i class="fa-solid fa-microphone-lines animate-pulse"></i>
+                </div>
+                <div class="truncate flex-grow">
+                    <span id="guestStageTag" class="text-[10px] font-black uppercase tracking-wider text-pink-400 block mb-0.5">A SEGUIR NO PALCO</span>
+                    <h4 id="guestStageTitle" class="text-sm font-black text-white truncate">---</h4>
+                    <p id="guestStageSubtitle" class="text-xs text-slate-300 truncate">---</p>
+                </div>
+            </div>
+
             <div class="disco-card p-6 rounded-3xl shadow-2xl">
                 <div class="flex items-center justify-between mb-6">
                     <div>
@@ -331,18 +361,42 @@
         </div>
     </div>
 
+    <!-- Modal de Chamada ao Palco para o Celular do Cantor -->
+    <div id="stageCallModal" class="hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-5 text-center">
+        <div class="disco-card p-7 md:p-8 rounded-3xl max-w-sm w-full border-2 border-pink-500 shadow-2xl shadow-pink-500/40 relative">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-tr from-pink-500 via-purple-500 to-cyan-400 p-1 shadow-xl shadow-pink-500/50 animate-bounce">
+                <div class="w-full h-full bg-slate-950 rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-microphone-lines text-pink-400 text-3xl"></i>
+                </div>
+            </div>
+            <span class="text-[11px] font-black tracking-widest text-pink-400 uppercase mb-2 inline-block px-3 py-1 bg-pink-500/10 rounded-full border border-pink-500/30 animate-pulse">SUA VEZ DE CANTAR!</span>
+            <h2 class="text-2xl md:text-3xl font-black text-white mb-2 tracking-tight">DIRIJA-SE AO PALCO!</h2>
+            <p class="text-xs text-slate-300 mb-4">Sua música está começando agora na TV!</p>
+            
+            <div class="bg-black/60 border border-white/10 rounded-2xl p-3.5 mb-5">
+                <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1">Música Selecionada:</p>
+                <h3 id="stageCallSongTitle" class="text-sm font-extrabold text-pink-400 truncate">---</h3>
+            </div>
+
+            <button onclick="dismissStageCall()" class="disco-btn w-full text-white font-black py-3.5 px-6 rounded-2xl text-sm flex items-center justify-center gap-2">
+                <i class="fa-solid fa-person-walking-arrow-right text-base"></i>
+                <span>Estou Indo para o Palco!</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Toast Notifications -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { initializeFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <!-- Firebase SDKs (Compat v10) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
+    <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDeTcxcxo-2kAMpXHjGwXDhW03nNfbXA30",
             authDomain: "karaoke-top.firebaseapp.com",
-            databaseURL: "https://karaoke-top-default-rtdb.firebaseio.com",
             projectId: "karaoke-top",
             storageBucket: "karaoke-top.firebasestorage.app",
             messagingSenderId: "332269760759",
@@ -350,250 +404,311 @@
             measurementId: "G-RRJME4DJRF"
         };
 
-        let app = null;
-        let auth = null;
         let db = null;
-        let targetDatabaseName = 'karaoke';
         let isFirebaseActive = false;
         let authPromise = null;
         let currentSessionCode = null;
         let currentUser = { name: '', role: 'guest' };
-        let sessionData = { songs: [], status: 'idle', currentSong: null };
+        let sessionData = { songs: [], status: 'idle', currentSong: null, countdown: null };
         let player = null;
         let isPlayerReady = false;
         let countdownInterval = null;
         let retryConnectionInterval = null;
+        let sseSource = null;
+        let pollInterval = null;
 
-        // Initialize Firebase
-        async function initFirebase() {
-            if (isFirebaseActive && db) return Promise.resolve();
+        // Controle de execução do countdown e alerta no celular
+        let isCountdownActive = false;
+        let currentCountdownSongId = null;
+        let currentSingerAlertDismissed = null;
 
-            if (!authPromise) {
-                authPromise = new Promise(async (resolve, reject) => {
-                    try {
-                        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-                        auth = getAuth(app);
-                        
-                        await signInAnonymously(auth);
+        function playStageCallSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
 
-                        // Try initializing 'karaoke' named database or fallbacks
-                        try {
-                            db = initializeFirestore(app, { experimentalForceLongPolling: true }, 'karaoke');
-                            targetDatabaseName = 'karaoke';
-                        } catch (e1) {
-                            try {
-                                db = initializeFirestore(app, { experimentalForceLongPolling: true }, 'karaoke-topzera');
-                                targetDatabaseName = 'karaoke-topzera';
-                            } catch (e2) {
-                                db = initializeFirestore(app, { experimentalForceLongPolling: true });
-                                targetDatabaseName = '(default)';
-                            }
-                        }
-
-                        isFirebaseActive = true;
-                        window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
-                        resolve();
-                    } catch (e) {
-                        console.error("Firebase Init Exception:", e);
-                        window.updateConnectionBadge('offline', 'Modo Local');
-                        reject(e);
-                    }
+                // Fanfarra de chamada ao palco (Dó - Mi - Sol - Dó Agudo)
+                [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.12);
+                    osc.stop(ctx.currentTime + idx * 0.12 + 0.35);
                 });
+            } catch(e) {}
+        }
+
+        function dismissStageCall() {
+            const modal = document.getElementById('stageCallModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function syncSessionToServer(data) {
+            if (!currentSessionCode) return;
+            fetch(`/api/sessions/${currentSessionCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(e => console.warn('Aviso sincronização servidor:', e));
+        }
+
+        function initSseFallback(code) {
+            if (sseSource) {
+                sseSource.close();
+                sseSource = null;
             }
+            if (window.EventSource) {
+                try {
+                    sseSource = new EventSource(`/api/sessions/${code}/stream`);
+                    sseSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            if (data && data.code === code) {
+                                sessionData = data;
+                                hideError();
+                                updateConnectionBadge('online', 'Conectado');
+                                renderUI();
+                            }
+                        } catch (e) {}
+                    };
+                } catch (e) {
+                    console.warn("SSE fallback aviso:", e);
+                }
+            }
+        }
+
+        function startSessionPolling(code) {
+            if (pollInterval) clearInterval(pollInterval);
+            const check = () => {
+                if (!currentSessionCode || currentSessionCode !== code) {
+                    if (pollInterval) clearInterval(pollInterval);
+                    return;
+                }
+                fetch(`/api/sessions/${code}`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => {
+                        if (data && data.code === code) {
+                            sessionData = data;
+                            hideError();
+                            updateConnectionBadge('online', 'Conectado');
+                            renderUI();
+                        }
+                    })
+                    .catch(() => {});
+            };
+            check();
+            pollInterval = setInterval(check, 2000);
+        }
+
+        // Função para garantir tempo limite nas chamadas
+        function withTimeout(promise, ms = 4000, errorMessage = "Tempo limite excedido") {
+            let timeoutId;
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => reject(new Error(errorMessage)), ms);
+            });
+            return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+        }
+
+        function initFirebase() {
+            if (typeof firebase === 'undefined') return Promise.resolve();
+            if (authPromise) return authPromise;
+
+            authPromise = new Promise((resolve) => {
+                try {
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    
+                    db = firebase.firestore();
+                    
+                    try {
+                        db.settings({ experimentalForceLongPolling: true });
+                    } catch (e) {}
+
+                    withTimeout(firebase.auth().signInAnonymously(), 3000, "Timeout Firebase Auth")
+                        .then(async () => {
+                            // Verifica se a base de dados Firestore realmente existe e responde
+                            try {
+                                await withTimeout(db.collection('sessions').limit(1).get(), 2000, "Firestore indisponível");
+                                isFirebaseActive = true;
+                                console.log("Nuvem Firebase Firestore ativa.");
+                            } catch(err) {
+                                console.warn("Firestore database não está provisionado na nuvem:", err.message);
+                                isFirebaseActive = false;
+                            }
+                            resolve();
+                        })
+                        .catch(err => {
+                            console.warn("Aviso Auth Firebase:", err.message);
+                            isFirebaseActive = false;
+                            resolve();
+                        });
+                } catch (e) {
+                    console.warn("Exceção Firebase:", e);
+                    isFirebaseActive = false;
+                    resolve();
+                }
+            });
 
             return authPromise;
         }
 
-        window.updateUrlSession = function(code) {
-            try {
-                if (window.history && window.history.pushState && window.location.protocol.startsWith('http')) {
-                    const newUrl = `${window.location.origin}${window.location.pathname}?session=${code}`;
-                    window.history.pushState({ path: newUrl }, '', newUrl);
-                }
-            } catch (e) {
-                console.warn("pushState ignored in iframe/restricted context:", e);
-            }
-        };
-
-        window.updateConnectionBadge = function(status, text) {
-            const badge = document.getElementById('sessionBadge');
+        function updateConnectionBadge(state, text) {
             const dot = document.getElementById('connectionDot');
-            const statusText = document.getElementById('connectionStatusText');
-            if (!badge || !dot || !statusText) return;
+            const txt = document.getElementById('connectionStatusText');
+            if (!dot || !txt) return;
 
-            if (status === 'online') {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
-                statusText.textContent = text || 'Nuvem Conectada';
-                statusText.className = "text-[11px] text-emerald-400 font-bold uppercase tracking-wider";
-            } else if (status === 'connecting') {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-                statusText.textContent = text || 'Conectando...';
-                statusText.className = "text-[11px] text-amber-400 font-semibold uppercase tracking-wider";
+            txt.textContent = text;
+            if (state === 'online') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            } else if (state === 'connecting') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
             } else {
-                dot.className = "w-2 h-2 rounded-full bg-slate-500";
-                statusText.textContent = text || 'Modo Local';
-                statusText.className = "text-[11px] text-slate-400 font-semibold uppercase tracking-wider";
+                dot.className = 'w-2 h-2 rounded-full bg-slate-500';
             }
-        };
+        }
 
-        window.showToast = function(msg, type = 'info') {
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        function onYouTubeIframeAPIReady() {
+            try {
+                player = new YT.Player('ytPlayer', {
+                    height: '100%',
+                    width: '100%',
+                    playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
+                    events: {
+                        'onReady': () => { isPlayerReady = true; },
+                        'onStateChange': (e) => {
+                            if (e.data === YT.PlayerState.ENDED) {
+                                minimizePlayer();
+                                finishCurrentSong();
+                            }
+                        },
+                        'onError': (e) => {
+                            console.warn("YouTube Player erro:", e.data);
+                            showToast("Vídeo bloqueado para reprodução externa pelo YouTube. Pulando...", "info");
+                            setTimeout(finishCurrentSong, 2000);
+                        }
+                    }
+                });
+            } catch(e) {
+                console.warn("Erro ao instanciar YT.Player:", e);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeCurrentSong();
+        });
+
+        // Ouvinte de mensagens de finalização de vídeo no iframe do YouTube
+        window.addEventListener('message', (event) => {
+            try {
+                if (typeof event.data === 'string') {
+                    const data = JSON.parse(event.data);
+                    if (data && (data.event === 'onStateChange' && data.info === 0)) {
+                        minimizePlayer();
+                        finishCurrentSong();
+                    }
+                }
+            } catch(e) {}
+        });
+
+        function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
             const toast = document.createElement('div');
-            const colorClass = type === 'error' ? 'bg-red-500/90 text-white' : (type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-slate-800/90 text-slate-100');
-            toast.className = `px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-white/10 text-xs font-bold transition-all transform translate-y-2 opacity-0 flex items-center gap-2 pointer-events-auto ${colorClass}`;
-            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : (type === 'success' ? 'fa-circle-check' : 'fa-circle-info')}"></i> <span>${msg}</span>`;
+            
+            const bgClass = type === 'error' ? 'bg-red-950/90 border-red-500/40 text-red-200' :
+                            type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200' :
+                            'bg-slate-900/90 border-slate-700 text-slate-200';
+            
+            const icon = type === 'error' ? 'fa-circle-xmark text-red-400' :
+                         type === 'success' ? 'fa-circle-check text-emerald-400' :
+                         'fa-circle-info text-cyan-400';
+
+            toast.className = `pointer-events-auto flex items-center gap-3 border px-4 py-3 rounded-2xl text-xs font-semibold backdrop-blur-xl shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+            
             container.appendChild(toast);
             
             setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
+                toast.classList.remove('translate-y-4', 'opacity-0');
             }, 10);
 
             setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
+                toast.classList.add('opacity-0', 'translate-y-4');
                 setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        };
+            }, 4000);
+        }
 
-        window.displayError = function(msg) {
+        function displayError(msg) {
             const box = document.getElementById('errorAlert');
             const txt = document.getElementById('errorAlertText');
-            if (txt) txt.innerHTML = msg;
-            if (box) box.classList.remove('hidden');
-        };
+            if (txt && box) {
+                txt.innerHTML = msg;
+                box.classList.remove('hidden');
+            }
+        }
 
-        window.hideError = function() {
+        function hideError() {
             const box = document.getElementById('errorAlert');
             if (box) box.classList.add('hidden');
-        };
+        }
 
-        window.runFirebaseDiagnostic = async function() {
-            const diagBox = document.getElementById('diagnosticDetails');
-            if (!diagBox) return;
-            diagBox.classList.remove('hidden');
-            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> Testando conexão com o Cloud Firestore...</p>';
+        function resetToLanding() {
+            currentSessionCode = null;
+            currentUser = { name: '', role: 'guest' };
 
-            let report = [];
+            if (sseSource) {
+                sseSource.close();
+                sseSource = null;
+            }
 
-            try {
-                app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-                report.push('✅ <strong>App Firebase:</strong> Inicializado no projeto: <code>' + firebaseConfig.projectId + '</code>.');
-            } catch (e) {
-                report.push('❌ <strong>App Firebase:</strong> Erro: ' + e.message);
-                diagBox.innerHTML = report.join('<br>');
-                return;
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+
+            if (retryConnectionInterval) {
+                clearInterval(retryConnectionInterval);
+                retryConnectionInterval = null;
             }
 
             try {
-                auth = getAuth(app);
-                const authRes = await Promise.race([
-                    signInAnonymously(auth),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação (6s)")), 6000))
-                ]);
-                report.push('✅ <strong>Auth Anónimo:</strong> Conectado com sucesso (UID: <code>' + authRes.user.uid + '</code>).');
-            } catch (e) {
-                report.push('❌ <strong>Auth Anónimo:</strong> Erro: ' + e.message);
-            }
-
-            const dbNamesToTest = ['karaoke', 'karaoke-topzera'];
-            let workingDbFound = false;
-
-            for (const dbName of dbNamesToTest) {
-                try {
-                    const testDb = initializeFirestore(app, { experimentalForceLongPolling: true }, dbName);
-                    const testDocRef = doc(testDb, 'sessions', '_diagnostic_test');
-                    await Promise.race([
-                        setDoc(testDocRef, { test: true, timestamp: new Date().toISOString() }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação")), 4000))
-                    ]);
-                    report.push(`✅ <strong>Firestore DB (${dbName}):</strong> Leitura e Escrita funcionando perfeitamente!`);
-                    db = testDb;
-                    targetDatabaseName = dbName;
-                    isFirebaseActive = true;
-                    workingDbFound = true;
-                    window.updateConnectionBadge('online', `Nuvem (${dbName})`);
-                    break;
-                } catch (e) {
-                    report.push(`⚠️ <strong>Firestore DB (${dbName}):</strong> ${e.message}`);
+                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('session');
+                    window.history.pushState({}, '', url.pathname + url.search);
                 }
+            } catch (e) {}
+
+            document.getElementById('screenMonitor').classList.add('hidden');
+            document.getElementById('screenGuest').classList.add('hidden');
+            document.getElementById('screenLanding').classList.remove('hidden');
+            document.getElementById('sessionBadge').classList.add('hidden');
+            hideError();
+            hideCountdown();
+            minimizePlayer();
+
+            if (player && isPlayerReady && typeof player.stopVideo === 'function') {
+                try { player.stopVideo(); } catch(err){}
             }
+            const iframe = document.getElementById('ytVideoIframe');
+            if (iframe) iframe.src = 'about:blank';
+        }
 
-            if (!workingDbFound) {
-                report.push('<br>👉 <u>Ação necessária:</u> Verifique se as regras foram publicadas com <code>allow read, write: if true;</code> na aba Rules do seu Firestore.');
-            }
-
-            diagBox.innerHTML = report.join('<br>');
-        };
-
-        window.listenSessionUpdates = function(code) {
-            if (!db) return;
-            
-            const docRef = doc(db, 'sessions', code);
-            onSnapshot(docRef, (snap) => {
-                if (snap.exists()) {
-                    window.hideError();
-                    window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
-                    sessionData = snap.data();
-                    renderUI();
-                    if (retryConnectionInterval) {
-                        clearInterval(retryConnectionInterval);
-                        retryConnectionInterval = null;
-                    }
-                } else {
-                    if (currentUser.role === 'host') {
-                        setDoc(docRef, sessionData).catch(console.warn);
-                    } else {
-                        window.updateConnectionBadge('connecting', 'A procurar sala...');
-                        window.displayError(`Procurando a Sessão <strong>#${code}</strong> na TV (${targetDatabaseName})...`);
-
-                        if (!retryConnectionInterval) {
-                            retryConnectionInterval = setInterval(() => {
-                                if (!db) return;
-                                getDoc(docRef).then(s => {
-                                    if (s.exists()) {
-                                        window.hideError();
-                                        sessionData = s.data();
-                                        renderUI();
-                                        clearInterval(retryConnectionInterval);
-                                        retryConnectionInterval = null;
-                                    }
-                                }).catch(console.warn);
-                            }, 2500);
-                        }
-                    }
-                }
-            }, (err) => {
-                console.warn("Aviso no Firestore listener:", err);
-                window.updateConnectionBadge('offline', 'Modo Local');
-                window.displayError(`<strong>Erro no Firestore (${targetDatabaseName}):</strong> ${err.message}`);
-            });
-        };
-
-        window.syncSessionToCloudInBackground = async function(code, data) {
-            try {
-                await initFirebase();
-                if (db) {
-                    const docRef = doc(db, 'sessions', code);
-                    await Promise.race([
-                        setDoc(docRef, data),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout no servidor (6s)")), 6000))
-                    ]);
-                    
-                    window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
-                    window.hideError();
-                    window.listenSessionUpdates(code);
-                    window.showToast(`Sessão #${code} conectada na nuvem!`, 'success');
-                }
-            } catch (err) {
-                console.warn("Sincronização em segundo plano:", err);
-                window.updateConnectionBadge('offline', 'Modo Local');
-                window.displayError(`<strong>Falha ao conectar no Firestore:</strong> ${err.message}`);
-            }
-        };
-
-        window.createSession = async function() {
-            const hostNameInput = document.getElementById('hostNameInput');
-            const hostName = hostNameInput ? (hostNameInput.value.trim() || 'Anfitrião') : 'Anfitrião';
+        async function createSession() {
+            const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
             
             currentUser = { name: hostName, role: 'host' };
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
@@ -606,18 +721,49 @@
                 createdAt: new Date().toISOString()
             };
 
-            window.updateUrlSession(currentSessionCode);
-            window.setupMonitorView();
-            
-            window.syncSessionToCloudInBackground(currentSessionCode, sessionData);
-        };
+            // 1. Muda de tela e configura o monitor instantaneamente
+            updateUrlSession(currentSessionCode);
+            setupMonitorView();
+            updateConnectionBadge('online', 'Conectado');
+            hideError();
 
-        window.joinSession = async function() {
+            // 2. Salva a sessão no servidor imediatamente
+            try {
+                await fetch(`/api/sessions/${currentSessionCode}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(sessionData)
+                });
+            } catch (err) {
+                console.warn("Erro ao registrar sessão no servidor:", err);
+            }
+
+            // 3. Conecta listeners de tempo real
+            listenSessionUpdates(currentSessionCode);
+
+            // 4. Se Firebase estiver disponível, sincroniza em segundo plano
+            syncSessionToCloudInBackground(currentSessionCode, sessionData);
+        }
+
+        async function syncSessionToCloudInBackground(code, data) {
+            syncSessionToServer(data);
+
+            if (!isFirebaseActive || !db) return;
+
+            try {
+                await withTimeout(db.collection('sessions').doc(code).set(data), 4000, "Timeout Firestore");
+                console.log("Sessão sincronizada no Firestore:", code);
+            } catch (err) {
+                console.warn("Sincronização Firestore opcional ignorada:", err.message);
+            }
+        }
+
+        async function joinSession() {
             const code = document.getElementById('joinCodeInput').value.trim();
             const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
 
             if (!code || code.length !== 4) {
-                window.showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
+                showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
                 return;
             }
 
@@ -626,47 +772,373 @@
 
             document.getElementById('guestNameQuickInput').value = guestName;
 
-            window.updateUrlSession(currentSessionCode);
-            window.setupGuestView();
-            window.updateConnectionBadge('connecting', 'Procurando sala...');
+            updateUrlSession(currentSessionCode);
+            setupGuestView();
+            updateConnectionBadge('connecting', 'Conectando...');
+            hideError();
 
-            initFirebase()
-                .then(() => {
-                    if (db) window.listenSessionUpdates(currentSessionCode);
-                })
-                .catch(() => {
-                    window.updateConnectionBadge('offline', 'Modo Offline');
-                });
-        };
+            listenSessionUpdates(currentSessionCode);
 
-        async function fetchYouTubeVideoId(query) {
-            const ytMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-            if (ytMatch && ytMatch[1]) {
-                return { videoId: ytMatch[1], title: query };
-            }
-            
             try {
-                const cleanQuery = encodeURIComponent(query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`);
-                const res = await fetch(`https://pipedapi.kavin.rocks/search?q=${cleanQuery}&filter=all`);
+                const res = await fetch(`/api/sessions/${currentSessionCode}`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.items && data.items.length > 0) {
-                        const firstVideo = data.items.find(item => item.type === 'stream');
-                        if (firstVideo) {
-                            const vId = firstVideo.url.split('v=')[1] || firstVideo.url.split('/').pop();
-                            return { videoId: vId, title: firstVideo.title };
+                    if (data && data.code === currentSessionCode) {
+                        sessionData = data;
+                        renderUI();
+                        updateConnectionBadge('online', 'Conectado');
+                        hideError();
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            setTimeout(() => {
+                if (!sessionData || !sessionData.code || sessionData.code !== currentSessionCode) {
+                    updateConnectionBadge('offline', 'Sala não encontrada');
+                    displayError(`
+                        <div class="flex flex-col gap-1">
+                            <span>Sessão <strong>#${code}</strong> não encontrada.</span>
+                            <span class="text-[11px] opacity-80">Verifique se o código de 4 dígitos confere com o mostrado na tela da TV.</span>
+                        </div>
+                    `);
+                }
+            }, 3000);
+        }
+
+        function updateUrlSession(code) {
+            try {
+                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('session', code);
+                    window.history.pushState({ session: code }, '', url.toString());
+                }
+            } catch (e) {}
+        }
+
+        function listenSessionUpdates(code) {
+            initSseFallback(code);
+            startSessionPolling(code);
+
+            if (isFirebaseActive && db) {
+                try {
+                    db.collection('sessions').doc(code).onSnapshot((doc) => {
+                        if (doc.exists) {
+                            hideError();
+                            updateConnectionBadge('online', 'Conectado');
+                            sessionData = doc.data();
+                            renderUI();
+                        }
+                    }, (err) => {
+                        console.warn("Aviso no Firestore listener:", err.message);
+                    });
+                } catch(e) {}
+            }
+        }
+
+        function renderUI() {
+            if (currentUser.role === 'host') {
+                renderQueueList();
+                if (sessionData.currentSong) {
+                    hideCountdown();
+                } else {
+                    checkQueueState();
+                }
+            } else {
+                renderGuestQueue();
+            }
+        }
+
+        function hideCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            isCountdownActive = false;
+            currentCountdownSongId = null;
+            const overlay = document.getElementById('countdownOverlay');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.style.display = 'none';
+            }
+        }
+
+        function checkQueueState() {
+            if (currentUser.role !== 'host') return;
+            // Se já há uma música tocando, garante que o overlay de contagem esteja oculto
+            if (sessionData.currentSong) {
+                hideCountdown();
+                return;
+            }
+            if (isCountdownActive) return;
+
+            if (sessionData.songs && sessionData.songs.length > 0) {
+                const nextSong = sessionData.songs[0];
+                startCountdown(nextSong);
+            }
+        }
+
+        function startCountdown(song) {
+            if (sessionData.currentSong) {
+                hideCountdown();
+                return;
+            }
+            if (isCountdownActive && currentCountdownSongId === song.id) return;
+            
+            hideCountdown();
+            isCountdownActive = true;
+            currentCountdownSongId = song.id;
+
+            document.getElementById('nextSingerName').textContent = song.userName;
+            document.getElementById('nextSongTitle').textContent = song.title || 'Música Selecionada';
+            
+            const overlay = document.getElementById('countdownOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                overlay.style.display = 'flex';
+            }
+
+            let seconds = 10;
+            const timerElem = document.getElementById('countdownTimer');
+            if (timerElem) timerElem.textContent = seconds;
+            playBeepSound();
+
+            // Notifica o servidor imediatamente para chamar a pessoa no celular!
+            if (currentUser.role === 'host') {
+                fetch(`/api/sessions/${currentSessionCode}/countdown`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        active: true,
+                        singer: song.userName,
+                        title: song.title || 'Música',
+                        songId: song.id,
+                        seconds: 10
+                    })
+                }).catch(() => {});
+            }
+
+            countdownInterval = setInterval(() => {
+                seconds--;
+                if (timerElem) timerElem.textContent = seconds;
+                
+                if (seconds > 0) {
+                    playBeepSound();
+                } else {
+                    hideCountdown();
+                    playNextSong();
+                }
+            }, 1000);
+        }
+
+        async function playNextSong() {
+            hideCountdown();
+
+            // Avisa servidor que countdown encerrou
+            if (currentUser.role === 'host') {
+                fetch(`/api/sessions/${currentSessionCode}/countdown`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ active: false })
+                }).catch(() => {});
+            }
+
+            if (!sessionData.songs || sessionData.songs.length === 0) {
+                document.getElementById('playerEmptyState').classList.remove('hidden');
+                return;
+            }
+
+            const currentSong = sessionData.songs.shift();
+            sessionData.currentSong = currentSong;
+            sessionData.countdown = null;
+            sessionData.status = 'playing';
+
+            document.getElementById('playerEmptyState').classList.add('hidden');
+            document.getElementById('currentSongBar').classList.remove('hidden');
+
+            document.getElementById('currentSongTitle').textContent = currentSong.title || 'Música do YouTube';
+            document.getElementById('currentSingerName').textContent = `Cantando agora: ${currentSong.userName}`;
+
+            // 1. Maximiza a tela do vídeo na TV
+            maximizePlayer();
+
+            // 2. Dispara a reprodução do vídeo
+            playVideoInPlayer(currentSong.videoId);
+
+            // 3. Sincroniza estado no servidor e na nuvem
+            syncSessionToServer(sessionData);
+
+            if (isFirebaseActive && db) {
+                db.collection('sessions').doc(currentSessionCode).update({
+                    songs: sessionData.songs,
+                    currentSong: currentSong,
+                    countdown: null,
+                    status: 'playing'
+                }).catch(e => console.error(e));
+            }
+        }
+
+        function playVideoInPlayer(videoId) {
+            const wrapper = document.getElementById('ytPlayerWrapper');
+            if (!wrapper) return;
+
+            // Se a API YT estiver pronta, usa player
+            if (isPlayerReady && player && typeof player.loadVideoById === 'function') {
+                try {
+                    player.loadVideoById(videoId);
+                    if (typeof player.playVideo === 'function') player.playVideo();
+                    return;
+                } catch (e) {
+                    console.warn("YT API loadVideoById falhou, usando iframe:", e);
+                }
+            }
+
+            // Fallback direto e infalível com iframe nativo do YouTube
+            wrapper.innerHTML = `
+                <iframe id="ytVideoIframe" class="w-full h-full border-0" 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&rel=0&controls=1" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen>
+                </iframe>
+            `;
+        }
+
+        async function finishCurrentSong() {
+            hideCountdown();
+
+            sessionData.currentSong = null;
+            sessionData.countdown = null;
+            sessionData.status = 'idle';
+
+            minimizePlayer();
+            document.getElementById('currentSongBar').classList.add('hidden');
+
+            fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
+            syncSessionToServer(sessionData);
+
+            if (isFirebaseActive && db) {
+                db.collection('sessions').doc(currentSessionCode).update({
+                    currentSong: null,
+                    countdown: null,
+                    status: 'idle'
+                }).catch(e => console.error(e));
+            }
+
+            checkQueueState();
+        }
+
+        function skipCurrentSong() {
+            hideCountdown();
+
+            // Interrompe reprodução
+            if (player && isPlayerReady && typeof player.stopVideo === 'function') {
+                try { player.stopVideo(); } catch(e) {}
+            }
+            const iframe = document.getElementById('ytVideoIframe');
+            if (iframe) iframe.src = 'about:blank';
+
+            sessionData.currentSong = null;
+            sessionData.countdown = null;
+            sessionData.status = 'idle';
+            document.getElementById('currentSongBar').classList.add('hidden');
+
+            fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
+            syncSessionToServer(sessionData);
+
+            if (isFirebaseActive && db) {
+                db.collection('sessions').doc(currentSessionCode).update({
+                    currentSong: null,
+                    countdown: null,
+                    status: 'idle'
+                }).catch(e => console.error(e));
+            }
+
+            showToast('Música pulada!', 'info');
+
+            // Se houver próximas músicas na fila, chama a próxima!
+            if (sessionData.songs && sessionData.songs.length > 0) {
+                checkQueueState();
+            } else {
+                minimizePlayer();
+                document.getElementById('playerEmptyState').classList.remove('hidden');
+            }
+        }
+
+        function closeCurrentSong() {
+            hideCountdown();
+
+            // Interrompe reprodução imediatamente
+            if (player && isPlayerReady && typeof player.stopVideo === 'function') {
+                try { player.stopVideo(); } catch(e) {}
+            }
+            const iframe = document.getElementById('ytVideoIframe');
+            if (iframe) iframe.src = 'about:blank';
+
+            // Minimiza player e sai da tela cheia
+            minimizePlayer();
+
+            sessionData.currentSong = null;
+            sessionData.countdown = null;
+            sessionData.status = 'idle';
+            document.getElementById('currentSongBar').classList.add('hidden');
+            document.getElementById('playerEmptyState').classList.remove('hidden');
+
+            fetch(`/api/sessions/${currentSessionCode}/skip`, { method: 'POST' }).catch(() => {});
+            syncSessionToServer(sessionData);
+
+            if (isFirebaseActive && db) {
+                db.collection('sessions').doc(currentSessionCode).update({
+                    currentSong: null,
+                    countdown: null,
+                    status: 'idle'
+                }).catch(e => console.error(e));
+            }
+
+            showToast('Música fechada.', 'info');
+        }
+
+        async function fetchYouTubeVideoId(query) {
+            const urlMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            if (urlMatch && urlMatch[1]) {
+                return { videoId: urlMatch[1], title: "Música Selecionada" };
+            }
+
+            const searchTerm = query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`;
+
+            // 1. Busca via proxy no servidor local
+            try {
+                const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.videoId) {
+                        return { videoId: data.videoId, title: data.title || searchTerm };
+                    }
+                }
+            } catch (err) {
+                console.warn("Busca via servidor indisponível:", err);
+            }
+
+            // 2. Busca via Piped API
+            try {
+                const response = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchTerm)}&filter=videos`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.items && data.items.length > 0) {
+                        const firstVideo = data.items[0];
+                        const videoId = firstVideo.url ? firstVideo.url.replace('/watch?v=', '') : null;
+                        if (videoId) {
+                            return { videoId: videoId, title: firstVideo.title || searchTerm };
                         }
                     }
                 }
-            } catch(e) {
-                console.warn("Piped API Search Fallback:", e);
+            } catch (err) {
+                console.warn("Busca via Piped indisponível:", err);
             }
 
-            const cleanTitle = query.toLowerCase().includes('karaoke') ? query : `${query} (Karaokê)`;
-            return { videoId: "L0MK7qz13bU", title: cleanTitle };
+            return { videoId: "L0MK7qz13bU", title: searchTerm };
         }
 
-        window.searchAndAddSong = async function() {
+        async function searchAndAddSong() {
             const nameInput = document.getElementById('guestNameQuickInput');
             const queryInput = document.getElementById('songQueryInput');
             const btn = document.getElementById('addSongBtn');
@@ -675,7 +1147,7 @@
             const query = queryInput.value.trim();
 
             if (!query) {
-                window.showToast('Digite o nome da música ou cantor!', 'error');
+                showToast('Digite o nome da música ou cantor!', 'error');
                 return;
             }
 
@@ -696,11 +1168,32 @@
 
             if (!sessionData.songs) sessionData.songs = [];
             sessionData.songs.push(newSong);
+            renderUI();
+
+            // Envia para o servidor local com broadcast instantâneo
+            try {
+                const res = await fetch(`/api/sessions/${currentSessionCode}/songs`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newSong)
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.session) {
+                        sessionData = data.session;
+                        renderUI();
+                    }
+                }
+            } catch (err) {
+                console.warn("Aviso ao enviar para o servidor:", err);
+                syncSessionToServer(sessionData);
+            }
 
             if (isFirebaseActive && db) {
-                const docRef = doc(db, 'sessions', currentSessionCode);
-                updateDoc(docRef, { songs: sessionData.songs }).catch(err => {
-                    console.warn("Música adicionada localmente:", err);
+                db.collection('sessions').doc(currentSessionCode).update({
+                    songs: sessionData.songs
+                }).catch(err => {
+                    console.warn("Música espelhada no Firebase falhou:", err.message);
                 });
             }
 
@@ -710,70 +1203,59 @@
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-plus text-sm"></i> <span>Adicionar à Fila</span>`;
 
-            window.showToast(`Música "${songResult.title}" enviada!`, 'success');
-        };
+            showToast(`Música "${songResult.title}" enviada!`, 'success');
+        }
 
-        window.playNextSong = async function() {
-            if (!sessionData.songs || sessionData.songs.length === 0) return;
+        function maximizePlayer() {
+            const container = document.getElementById('playerContainer');
+            if (!container) return;
 
-            const currentSong = sessionData.songs.shift();
-            sessionData.currentSong = currentSong;
+            // Remove restrições e bordas normais
+            container.classList.remove('aspect-video', 'rounded-3xl', 'relative', 'border');
+            // Cobre 100% da viewport por cima de absolutamente todo o site
+            container.classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none', 'bg-black');
 
-            if (isFirebaseActive && db) {
-                const docRef = doc(db, 'sessions', currentSessionCode);
-                updateDoc(docRef, {
-                    songs: sessionData.songs,
-                    currentSong: currentSong
-                }).catch(e => console.error(e));
+            // Exibe a barra de controles flutuantes com Pular e Fechar (X)
+            const controls = document.getElementById('fullscreenControlsBar');
+            if (controls) controls.classList.remove('hidden');
+
+            // Atualiza os dados na barra superior da tela cheia
+            if (sessionData.currentSong) {
+                const fsTitle = document.getElementById('fsSongTitle');
+                const fsSinger = document.getElementById('fsSingerName');
+                if (fsTitle) fsTitle.textContent = sessionData.currentSong.title || 'Música do YouTube';
+                if (fsSinger) fsSinger.textContent = `Cantando agora: ${sessionData.currentSong.userName}`;
             }
 
-            document.getElementById('countdownOverlay').classList.add('hidden');
-            document.getElementById('currentSongBar').classList.remove('hidden');
-            document.getElementById('playerEmptyState').classList.add('hidden');
-
-            document.getElementById('currentSongTitle').textContent = currentSong.title || 'Música do YouTube';
-            document.getElementById('currentSingerName').textContent = `Cantando agora: ${currentSong.userName}`;
-
-            if (isPlayerReady && player) {
-                player.loadVideoById(currentSong.videoId);
-                window.maximizePlayer();
-            }
-        };
-
-        window.finishCurrentSong = async function() {
-            sessionData.currentSong = null;
-            if (isFirebaseActive && db) {
-                const docRef = doc(db, 'sessions', currentSessionCode);
-                updateDoc(docRef, { currentSong: null }).catch(e => console.error(e));
-            }
-            document.getElementById('currentSongBar').classList.add('hidden');
-            checkQueueState();
-        };
-
-        window.skipCurrentSong = function() {
-            if (player && isPlayerReady) player.stopVideo();
-            window.finishCurrentSong();
-            window.showToast('Música pulada!', 'info');
-        };
-
-        window.resetToLanding = function() {
-            currentSessionCode = null;
-            currentUser = { name: '', role: 'guest' };
+            // Tenta ativar o modo fullscreen nativo do navegador
             try {
-                if (window.history && window.history.pushState && window.location.protocol.startsWith('http')) {
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.pushState({}, '', cleanUrl);
+                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            } catch (e) {}
+        }
+
+        function minimizePlayer() {
+            const container = document.getElementById('playerContainer');
+            if (!container) return;
+
+            // Sai do modo fullscreen nativo do navegador se ativo
+            try {
+                if (document.fullscreenElement && document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
                 }
             } catch (e) {}
 
-            document.getElementById('screenLanding').classList.remove('hidden');
-            document.getElementById('screenMonitor').classList.add('hidden');
-            document.getElementById('screenGuest').classList.add('hidden');
-            document.getElementById('sessionBadge').classList.add('hidden');
-            window.hideError();
-        };
+            // Restaura o container do player ao tamanho normal integrado
+            container.classList.remove('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none', 'bg-black');
+            container.classList.add('relative', 'aspect-video', 'rounded-3xl', 'border');
 
-        window.setupMonitorView = function() {
+            // Oculta a barra de controles da tela cheia
+            const controls = document.getElementById('fullscreenControlsBar');
+            if (controls) controls.classList.add('hidden');
+        }
+
+        function setupMonitorView() {
             document.getElementById('screenLanding').classList.add('hidden');
             document.getElementById('screenGuest').classList.add('hidden');
             document.getElementById('screenMonitor').classList.remove('hidden');
@@ -786,9 +1268,9 @@
             document.getElementById('leaveSessionBtn').classList.remove('hidden');
 
             generateQRCodes();
-        };
+        }
 
-        window.setupGuestView = function() {
+        function setupGuestView() {
             document.getElementById('screenLanding').classList.add('hidden');
             document.getElementById('screenMonitor').classList.add('hidden');
             document.getElementById('screenGuest').classList.remove('hidden');
@@ -799,40 +1281,29 @@
             document.getElementById('sessionBadge').classList.remove('hidden');
             document.getElementById('sessionBadge').classList.add('flex');
             document.getElementById('leaveSessionBtn').classList.remove('hidden');
-        };
+        }
 
         function generateQRCodes() {
-            const hostOrigin = (window.location.protocol.startsWith('http') && window.location.origin) ? window.location.origin : 'https://karaoke.top';
-            const sessionUrl = `${hostOrigin}${window.location.pathname}?session=${currentSessionCode}`;
+            const targetDomain = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file')) ? window.location.origin : "https://karaoke.top";
+            const sessionUrl = `${targetDomain}/?session=${currentSessionCode}`;
+
             const qrElem = document.getElementById('qrcode');
             const modalQrElem = document.getElementById('modalQrcode');
 
-            if (qrElem) qrElem.innerHTML = '';
-            if (modalQrElem) modalQrElem.innerHTML = '';
+            qrElem.innerHTML = '';
+            modalQrElem.innerHTML = '';
 
             if (typeof QRCode !== 'undefined') {
-                if (qrElem) new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
-                if (modalQrElem) new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
+                new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
+                new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
             }
 
-            const qrUrlText = document.getElementById('qrUrlText');
-            const modalQrCodeText = document.getElementById('modalQrCodeText');
-            if (qrUrlText) qrUrlText.textContent = sessionUrl;
-            if (modalQrCodeText) modalQrCodeText.textContent = sessionUrl;
-        }
-
-        function renderUI() {
-            if (currentUser.role === 'host') {
-                renderQueueList();
-                checkQueueState();
-            } else {
-                renderGuestQueue();
-            }
+            document.getElementById('qrUrlText').textContent = sessionUrl;
+            document.getElementById('modalQrCodeText').textContent = sessionUrl;
         }
 
         function renderQueueList() {
             const list = document.getElementById('queueList');
-            if (!list) return;
             const songs = sessionData.songs || [];
             document.getElementById('queueCount').textContent = songs.length;
 
@@ -856,60 +1327,77 @@
 
         function renderGuestQueue() {
             const list = document.getElementById('guestQueueList');
-            if (!list) return;
             const songs = sessionData.songs || [];
+            const banner = document.getElementById('guestStageBanner');
+            const myName = (currentUser.name || document.getElementById('guestNameQuickInput').value || '').trim().toLowerCase();
 
+            // 1. Atualizar lista de espera
             if (songs.length === 0) {
                 list.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhuma música na fila. Seja o primeiro!</p>`;
-                return;
-            }
-
-            list.innerHTML = songs.map((song, idx) => `
-                <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center justify-between gap-3 backdrop-blur-md">
-                    <div class="flex items-center gap-3 overflow-hidden">
-                        <span class="text-xs font-black font-mono text-pink-400 w-4">${idx + 1}</span>
-                        <div class="truncate">
-                            <h5 class="text-xs font-bold text-white truncate">${song.title}</h5>
-                            <p class="text-[10px] text-slate-400"><i class="fa-solid fa-user text-[9px]"></i> ${song.userName}</p>
+            } else {
+                list.innerHTML = songs.map((song, idx) => `
+                    <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex items-center justify-between gap-3 backdrop-blur-md">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <span class="text-xs font-black font-mono text-pink-400 w-4">${idx + 1}</span>
+                            <div class="truncate">
+                                <h5 class="text-xs font-bold text-white truncate">${song.title}</h5>
+                                <p class="text-[10px] text-slate-400"><i class="fa-solid fa-user text-[9px]"></i> ${song.userName}</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
-        }
+                `).join('');
+            }
 
-        function checkQueueState() {
-            if (!sessionData.currentSong && sessionData.songs && sessionData.songs.length > 0) {
-                const nextSong = sessionData.songs[0];
-                startCountdown(nextSong);
+            // 2. Chamar cantor para o palco no celular
+            if (sessionData.countdown && sessionData.countdown.active) {
+                const singer = (sessionData.countdown.singer || '').trim();
+                const title = sessionData.countdown.title || 'Música';
+                const songId = sessionData.countdown.songId;
+                const isMyTurn = myName && singer.toLowerCase() === myName;
+
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    document.getElementById('guestStageTag').textContent = isMyTurn ? '🎉 É A SUA VEZ!' : 'A SEGUIR NO PALCO';
+                    document.getElementById('guestStageTitle').textContent = isMyTurn ? 'VÁ PARA O PALCO AGORA!' : singer;
+                    document.getElementById('guestStageSubtitle').textContent = `Música: ${title}`;
+                }
+
+                if (isMyTurn && currentSingerAlertDismissed !== songId) {
+                    currentSingerAlertDismissed = songId;
+                    const stageModal = document.getElementById('stageCallModal');
+                    if (stageModal) {
+                        document.getElementById('stageCallSongTitle').textContent = `"${title}"`;
+                        stageModal.classList.remove('hidden');
+                    }
+                    if ('vibrate' in navigator) {
+                        try { navigator.vibrate([400, 200, 400, 200, 600]); } catch(e){}
+                    }
+                    playStageCallSound();
+                }
+            } else if (sessionData.currentSong) {
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    const isMe = myName && (sessionData.currentSong.userName || '').trim().toLowerCase() === myName;
+                    document.getElementById('guestStageTag').textContent = isMe ? '🎤 VOCÊ NO PALCO!' : 'CANTANDO AGORA';
+                    document.getElementById('guestStageTitle').textContent = sessionData.currentSong.userName;
+                    document.getElementById('guestStageSubtitle').textContent = sessionData.currentSong.title || 'Música';
+                }
+            } else {
+                if (banner) banner.classList.add('hidden');
             }
         }
 
-        function startCountdown(song) {
-            document.getElementById('nextSingerName').textContent = song.userName;
-            document.getElementById('nextSongTitle').textContent = song.title || 'Música do YouTube';
-            document.getElementById('countdownOverlay').classList.remove('hidden');
-
-            let seconds = 10;
-            document.getElementById('countdownTimer').textContent = seconds;
-            playBeepSound();
-
-            clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                seconds--;
-                document.getElementById('countdownTimer').textContent = seconds;
-                
-                if (seconds > 0) {
-                    playBeepSound();
-                } else {
-                    clearInterval(countdownInterval);
-                    window.playNextSong();
-                }
-            }, 1000);
+        function toggleQrModal() {
+            document.getElementById('qrModal').classList.toggle('hidden');
         }
 
         function playBeepSound() {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -922,42 +1410,6 @@
             } catch (e) {}
         }
 
-        window.toggleQrModal = function() {
-            document.getElementById('qrModal').classList.toggle('hidden');
-        };
-
-        window.maximizePlayer = function() {
-            document.getElementById('playerContainer').classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
-            document.getElementById('fullscreenExitBtn').classList.remove('hidden');
-        };
-
-        window.minimizePlayer = function() {
-            document.getElementById('playerContainer').classList.remove('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
-            document.getElementById('fullscreenExitBtn').classList.add('hidden');
-        };
-
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        window.onYouTubeIframeAPIReady = function() {
-            player = new YT.Player('ytPlayer', {
-                height: '100%',
-                width: '100%',
-                playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
-                events: {
-                    'onReady': () => { isPlayerReady = true; },
-                    'onStateChange': (e) => {
-                        if (e.data === YT.PlayerState.ENDED) {
-                            window.minimizePlayer();
-                            window.finishCurrentSong();
-                        }
-                    }
-                }
-            });
-        };
-
         window.addEventListener('DOMContentLoaded', async () => {
             initFirebase().catch(console.warn);
 
@@ -967,12 +1419,36 @@
                 if (sessionParam) {
                     currentSessionCode = sessionParam;
                     currentUser.role = 'guest';
-                    window.setupGuestView();
-                    
-                    await initFirebase();
-                    if (db) {
-                        window.listenSessionUpdates(currentSessionCode);
-                    }
+                    setupGuestView();
+                    updateConnectionBadge('connecting', 'Conectando...');
+                    hideError();
+
+                    listenSessionUpdates(currentSessionCode);
+
+                    try {
+                        const res = await fetch(`/api/sessions/${currentSessionCode}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data && data.code === currentSessionCode) {
+                                sessionData = data;
+                                renderUI();
+                                updateConnectionBadge('online', 'Conectado');
+                                hideError();
+                            }
+                        }
+                    } catch (e) {}
+
+                    setTimeout(() => {
+                        if (!sessionData || !sessionData.code || sessionData.code !== currentSessionCode) {
+                            updateConnectionBadge('offline', 'Sala não encontrada');
+                            displayError(`
+                                <div class="flex flex-col gap-1">
+                                    <span>Sessão <strong>#${currentSessionCode}</strong> não encontrada.</span>
+                                    <span class="text-[11px] opacity-80">Verifique se a sessão ainda está aberta na tela da TV.</span>
+                                </div>
+                            `);
+                        }
+                    }, 3500);
                 }
             } catch(e) {
                 console.warn("Aviso na leitura de parâmetros de URL:", e);
