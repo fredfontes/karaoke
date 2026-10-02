@@ -102,6 +102,7 @@
 
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
+        <!-- Error / Status Alert Banner -->
         <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
             <div class="flex items-start justify-between gap-3">
                 <div class="flex items-start gap-3">
@@ -174,7 +175,6 @@
             </div>
         </section>
 
-        <!-- TELA 2: PAINEL DO MONITOR / TV -->
         <section id="screenMonitor" class="hidden flex-col gap-6">
             <div class="flex flex-wrap items-center justify-between gap-4 disco-card p-4 rounded-2xl">
                 <div>
@@ -274,7 +274,6 @@
             </div>
         </section>
 
-        <!-- TELA 3: VISÃO MOBILE DO CONVIDADO -->
         <section id="screenGuest" class="hidden flex-col gap-6 max-w-md mx-auto w-full">
             <div class="disco-card p-6 rounded-3xl shadow-2xl">
                 <div class="flex items-center justify-between mb-6">
@@ -335,13 +334,12 @@
     <!-- Toast Notifications -->
     <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Firebase SDKs (Compat v10) -->
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { initializeFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <script>
-        const defaultFirebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyDeTcxcxo-2kAMpXHjGwXDhW03nNfbXA30",
             authDomain: "karaoke-top.firebaseapp.com",
             projectId: "karaoke",
@@ -351,9 +349,10 @@
             measurementId: "G-RRJME4DJRF"
         };
 
-        const firebaseConfig = defaultFirebaseConfig;
-
+        let app = null;
+        let auth = null;
         let db = null;
+        let targetDatabaseName = 'karaoke';
         let isFirebaseActive = false;
         let authPromise = null;
         let currentSessionCode = null;
@@ -364,173 +363,38 @@
         let countdownInterval = null;
         let retryConnectionInterval = null;
 
-        function updateConnectionBadge(status, text) {
-            const dot = document.getElementById('connectionDot');
-            const textElem = document.getElementById('connectionStatusText');
-            if (!dot || !textElem) return;
-
-            textElem.textContent = text;
-            
-            if (status === 'online') {
-                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
-            } else if (status === 'connecting') {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-            } else {
-                dot.className = "w-2 h-2 rounded-full bg-slate-500";
-            }
-        }
-
-        function displayError(msg) {
-            const box = document.getElementById('errorAlert');
-            const txt = document.getElementById('errorAlertText');
-            if (txt) txt.innerHTML = msg;
-            if (box) box.classList.remove('hidden');
-        }
-
-        function hideError() {
-            const box = document.getElementById('errorAlert');
-            if (box) box.classList.add('hidden');
-        }
-
-        function resetToLanding() {
-            currentSessionCode = null;
-            currentUser = { name: '', role: 'guest' };
-            
-            try {
-                if (window.history && window.history.pushState) {
-                    const cleanUrl = window.location.origin + window.location.pathname;
-                    window.history.pushState({}, '', cleanUrl);
-                }
-            } catch (e) {}
-
-            document.getElementById('screenLanding').classList.remove('hidden');
-            document.getElementById('screenMonitor').classList.add('hidden');
-            document.getElementById('screenGuest').classList.add('hidden');
-            document.getElementById('sessionBadge').classList.add('hidden');
-            hideError();
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            if (!container) return;
-
-            const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-emerald-500/90 border-emerald-400' : 
-                            type === 'error' ? 'bg-red-500/90 border-red-400' : 'bg-slate-800/90 border-slate-700';
-            
-            toast.className = `px-4 py-3 rounded-2xl border text-white text-xs font-semibold shadow-xl backdrop-blur-md transition-all transform translate-y-2 opacity-0 flex items-center gap-2 ${bgColor}`;
-            toast.innerHTML = `<span>${message}</span>`;
-
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-2', 'opacity-0');
-            }, 10);
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-2');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
-
-        async function runFirebaseDiagnostic() {
-            const diagBox = document.getElementById('diagnosticDetails');
-            if (!diagBox) return;
-            diagBox.classList.remove('hidden');
-            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> A testar conexão com o Cloud Firestore...</p>';
-
-            let report = [];
-
-            if (typeof firebase === 'undefined') {
-                report.push('❌ <strong>SDK Firebase:</strong> Não foi possível carregar os scripts.');
-                diagBox.innerHTML = report.join('<br>');
-                return;
-            } else {
-                report.push('✅ <strong>SDK Firebase:</strong> Módulos carregados com sucesso.');
-            }
-
-            try {
-                const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
-                report.push('✅ <strong>App Firebase:</strong> Inicializado no projeto: <code>' + firebaseConfig.projectId + '</code>.');
-            } catch (e) {
-                report.push('❌ <strong>App Firebase:</strong> Erro: ' + e.message);
-                diagBox.innerHTML = report.join('<br>');
-                return;
-            }
-
-            try {
-                const authRes = await Promise.race([
-                    firebase.auth().signInAnonymously(),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação (6s)")), 6000))
-                ]);
-                report.push('✅ <strong>Auth Anónimo:</strong> Conectado com sucesso (UID: <code>' + authRes.user.uid + '</code>).');
-            } catch (e) {
-                let hint = '';
-                if (e.code === 'auth/operation-not-allowed') {
-                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Authentication > Sign-in method e ative a opção <strong>Anônimo</strong>.';
-                } else if (e.message && e.message.includes('Timeout')) {
-                    hint = '<br>👉 <u>Ação necessária:</u> Desative temporariamente AdBlockers ou extensões que possam estar a bloquear requisições.';
-                }
-                report.push('❌ <strong>Auth Anónimo:</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
-            }
-
-            try {
-                db = firebase.firestore();
-
-                try {
-                    db.settings({ experimentalForceLongPolling: true });
-                } catch(e) {}
-
-                const testDocRef = db.collection('sessions').doc('_diagnostic_test');
-                await Promise.race([
-                    testDocRef.set({ test: true, timestamp: new Date().toISOString() }),
-                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação no Firestore (6s)")), 6000))
-                ]);
-                report.push('✅ <strong>Firestore DB:</strong> Leitura e Escrita a funcionar perfeitamente!');
-            } catch (e) {
-                let hint = '';
-                if (e.code === 'permission-denied') {
-                    hint = '<br>👉 <u>Ação necessária:</u> Vá ao Firebase Console > Firestore Database > aba Rules e altere para <code>allow read, write: if true;</code>';
-                } else if (e.code === 'not-found') {
-                    hint = '<br>👉 <u>Ação necessária:</u> A base de dados Firestore não foi encontrada. Verifique se criou a base no Firebase Console.';
-                } else if (e.message && e.message.includes('Timeout')) {
-                    hint = '<br>👉 <u>Causas prováveis:</u><br>1. Alguma extensão/firewall no navegador está a bloquear requisições HTTP.<br>2. Verifique se as regras do Firestore foram publicadas.';
-                }
-                report.push('❌ <strong>Firestore DB:</strong> Erro <code>[' + (e.code || 'TIMEOUT') + ']</code>: ' + e.message + hint);
-            }
-
-            diagBox.innerHTML = report.join('<br>');
-        }
-
-        function initFirebase() {
-            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou no navegador."));
+        // Initialize Firebase
+        async function initFirebase() {
             if (isFirebaseActive && db) return Promise.resolve();
 
             if (!authPromise) {
-                authPromise = new Promise((resolve, reject) => {
+                authPromise = new Promise(async (resolve, reject) => {
                     try {
-                        const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+                        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+                        auth = getAuth(app);
                         
-                        db = firebase.firestore();
-                        
-                        try {
-                            db.settings({ experimentalForceLongPolling: true });
-                        } catch (e) {}
+                        await signInAnonymously(auth);
 
-                        firebase.auth().signInAnonymously()
-                            .then(() => {
-                                isFirebaseActive = true;
-                                updateConnectionBadge('online', 'Nuvem Conectada');
-                                resolve();
-                            })
-                            .catch(err => {
-                                console.warn("Aviso Auth Firebase:", err);
-                                updateConnectionBadge('offline', 'Modo Local');
-                                reject(err);
-                            });
+                        // Try initializing 'karaoke' named database or fallbacks
+                        try {
+                            db = initializeFirestore(app, { experimentalForceLongPolling: true }, 'karaoke');
+                            targetDatabaseName = 'karaoke';
+                        } catch (e1) {
+                            try {
+                                db = initializeFirestore(app, { experimentalForceLongPolling: true }, 'karaoke-topzera');
+                                targetDatabaseName = 'karaoke-topzera';
+                            } catch (e2) {
+                                db = initializeFirestore(app, { experimentalForceLongPolling: true });
+                                targetDatabaseName = '(default)';
+                            }
+                        }
+
+                        isFirebaseActive = true;
+                        window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
+                        resolve();
                     } catch (e) {
-                        console.error("Exceção Firebase:", e);
-                        updateConnectionBadge('offline', 'Modo Local');
+                        console.error("Firebase Init Exception:", e);
+                        window.updateConnectionBadge('offline', 'Modo Local');
                         reject(e);
                     }
                 });
@@ -539,35 +403,194 @@
             return authPromise;
         }
 
-        async function syncSessionToCloudInBackground(code, data) {
+        window.updateUrlSession = function(code) {
+            try {
+                if (window.history && window.history.pushState && window.location.protocol.startsWith('http')) {
+                    const newUrl = `${window.location.origin}${window.location.pathname}?session=${code}`;
+                    window.history.pushState({ path: newUrl }, '', newUrl);
+                }
+            } catch (e) {
+                console.warn("pushState ignored in iframe/restricted context:", e);
+            }
+        };
+
+        window.updateConnectionBadge = function(status, text) {
+            const badge = document.getElementById('sessionBadge');
+            const dot = document.getElementById('connectionDot');
+            const statusText = document.getElementById('connectionStatusText');
+            if (!badge || !dot || !statusText) return;
+
+            if (status === 'online') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                statusText.textContent = text || 'Nuvem Conectada';
+                statusText.className = "text-[11px] text-emerald-400 font-bold uppercase tracking-wider";
+            } else if (status === 'connecting') {
+                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+                statusText.textContent = text || 'Conectando...';
+                statusText.className = "text-[11px] text-amber-400 font-semibold uppercase tracking-wider";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-slate-500";
+                statusText.textContent = text || 'Modo Local';
+                statusText.className = "text-[11px] text-slate-400 font-semibold uppercase tracking-wider";
+            }
+        };
+
+        window.showToast = function(msg, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const colorClass = type === 'error' ? 'bg-red-500/90 text-white' : (type === 'success' ? 'bg-emerald-500/90 text-white' : 'bg-slate-800/90 text-slate-100');
+            toast.className = `px-4 py-3 rounded-2xl shadow-2xl backdrop-blur-md border border-white/10 text-xs font-bold transition-all transform translate-y-2 opacity-0 flex items-center gap-2 pointer-events-auto ${colorClass}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : (type === 'success' ? 'fa-circle-check' : 'fa-circle-info')}"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        };
+
+        window.displayError = function(msg) {
+            const box = document.getElementById('errorAlert');
+            const txt = document.getElementById('errorAlertText');
+            if (txt) txt.innerHTML = msg;
+            if (box) box.classList.remove('hidden');
+        };
+
+        window.hideError = function() {
+            const box = document.getElementById('errorAlert');
+            if (box) box.classList.add('hidden');
+        };
+
+        window.runFirebaseDiagnostic = async function() {
+            const diagBox = document.getElementById('diagnosticDetails');
+            if (!diagBox) return;
+            diagBox.classList.remove('hidden');
+            diagBox.innerHTML = '<p class="text-amber-400"><i class="fa-solid fa-spinner animate-spin"></i> Testando conexão com o Cloud Firestore...</p>';
+
+            let report = [];
+
+            try {
+                app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+                report.push('✅ <strong>App Firebase:</strong> Inicializado no projeto: <code>' + firebaseConfig.projectId + '</code>.');
+            } catch (e) {
+                report.push('❌ <strong>App Firebase:</strong> Erro: ' + e.message);
+                diagBox.innerHTML = report.join('<br>');
+                return;
+            }
+
+            try {
+                auth = getAuth(app);
+                const authRes = await Promise.race([
+                    signInAnonymously(auth),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout na autenticação (6s)")), 6000))
+                ]);
+                report.push('✅ <strong>Auth Anónimo:</strong> Conectado com sucesso (UID: <code>' + authRes.user.uid + '</code>).');
+            } catch (e) {
+                report.push('❌ <strong>Auth Anónimo:</strong> Erro: ' + e.message);
+            }
+
+            const dbNamesToTest = ['karaoke', 'karaoke-topzera'];
+            let workingDbFound = false;
+
+            for (const dbName of dbNamesToTest) {
+                try {
+                    const testDb = initializeFirestore(app, { experimentalForceLongPolling: true }, dbName);
+                    const testDocRef = doc(testDb, 'sessions', '_diagnostic_test');
+                    await Promise.race([
+                        setDoc(testDocRef, { test: true, timestamp: new Date().toISOString() }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout de gravação")), 4000))
+                    ]);
+                    report.push(`✅ <strong>Firestore DB (${dbName}):</strong> Leitura e Escrita funcionando perfeitamente!`);
+                    db = testDb;
+                    targetDatabaseName = dbName;
+                    isFirebaseActive = true;
+                    workingDbFound = true;
+                    window.updateConnectionBadge('online', `Nuvem (${dbName})`);
+                    break;
+                } catch (e) {
+                    report.push(`⚠️ <strong>Firestore DB (${dbName}):</strong> ${e.message}`);
+                }
+            }
+
+            if (!workingDbFound) {
+                report.push('<br>👉 <u>Ação necessária:</u> Verifique se as regras foram publicadas com <code>allow read, write: if true;</code> na aba Rules do seu Firestore.');
+            }
+
+            diagBox.innerHTML = report.join('<br>');
+        };
+
+        window.listenSessionUpdates = function(code) {
+            if (!db) return;
+            
+            const docRef = doc(db, 'sessions', code);
+            onSnapshot(docRef, (snap) => {
+                if (snap.exists()) {
+                    window.hideError();
+                    window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
+                    sessionData = snap.data();
+                    renderUI();
+                    if (retryConnectionInterval) {
+                        clearInterval(retryConnectionInterval);
+                        retryConnectionInterval = null;
+                    }
+                } else {
+                    if (currentUser.role === 'host') {
+                        setDoc(docRef, sessionData).catch(console.warn);
+                    } else {
+                        window.updateConnectionBadge('connecting', 'A procurar sala...');
+                        window.displayError(`Procurando a Sessão <strong>#${code}</strong> na TV (${targetDatabaseName})...`);
+
+                        if (!retryConnectionInterval) {
+                            retryConnectionInterval = setInterval(() => {
+                                if (!db) return;
+                                getDoc(docRef).then(s => {
+                                    if (s.exists()) {
+                                        window.hideError();
+                                        sessionData = s.data();
+                                        renderUI();
+                                        clearInterval(retryConnectionInterval);
+                                        retryConnectionInterval = null;
+                                    }
+                                }).catch(console.warn);
+                            }, 2500);
+                        }
+                    }
+                }
+            }, (err) => {
+                console.warn("Aviso no Firestore listener:", err);
+                window.updateConnectionBadge('offline', 'Modo Local');
+                window.displayError(`<strong>Erro no Firestore (${targetDatabaseName}):</strong> ${err.message}`);
+            });
+        };
+
+        window.syncSessionToCloudInBackground = async function(code, data) {
             try {
                 await initFirebase();
                 if (db) {
+                    const docRef = doc(db, 'sessions', code);
                     await Promise.race([
-                        db.collection('sessions').doc(code).set(data),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("O servidor do Firestore não respondeu a tempo (timeout de 6s).")), 6000))
+                        setDoc(docRef, data),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout no servidor (6s)")), 6000))
                     ]);
                     
-                    updateConnectionBadge('online', 'Nuvem Conectada');
-                    hideError();
-                    listenSessionUpdates(code);
-                    showToast(`Sessão #${code} conectada na nuvem!`, 'success');
+                    window.updateConnectionBadge('online', `Nuvem (${targetDatabaseName})`);
+                    window.hideError();
+                    window.listenSessionUpdates(code);
+                    window.showToast(`Sessão #${code} conectada na nuvem!`, 'success');
                 }
             } catch (err) {
                 console.warn("Sincronização em segundo plano:", err);
-                updateConnectionBadge('offline', 'Modo Local');
-                
-                const errCode = err.code ? `[${err.code}] ` : '';
-                const errDetail = `${errCode}${err.message}`;
-                
-                displayError(`
-                    <strong>Falha ao conectar no Firestore:</strong> ${errDetail}
-                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta em Modo Local. Clique em <strong>"Testar Conexão"</strong> ao lado para verificar a base.</span>
-                `);
+                window.updateConnectionBadge('offline', 'Modo Local');
+                window.displayError(`<strong>Falha ao conectar no Firestore:</strong> ${err.message}`);
             }
-        }
+        };
 
-        async function createSession() {
+        window.createSession = async function() {
             const hostNameInput = document.getElementById('hostNameInput');
             const hostName = hostNameInput ? (hostNameInput.value.trim() || 'Anfitrião') : 'Anfitrião';
             
@@ -582,18 +605,18 @@
                 createdAt: new Date().toISOString()
             };
 
-            updateUrlSession(currentSessionCode);
-            setupMonitorView();
+            window.updateUrlSession(currentSessionCode);
+            window.setupMonitorView();
             
-            syncSessionToCloudInBackground(currentSessionCode, sessionData);
-        }
+            window.syncSessionToCloudInBackground(currentSessionCode, sessionData);
+        };
 
-        async function joinSession() {
+        window.joinSession = async function() {
             const code = document.getElementById('joinCodeInput').value.trim();
             const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
 
             if (!code || code.length !== 4) {
-                showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
+                window.showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
                 return;
             }
 
@@ -602,186 +625,47 @@
 
             document.getElementById('guestNameQuickInput').value = guestName;
 
-            updateUrlSession(currentSessionCode);
-            setupGuestView();
-            updateConnectionBadge('connecting', 'Procurando sala...');
+            window.updateUrlSession(currentSessionCode);
+            window.setupGuestView();
+            window.updateConnectionBadge('connecting', 'Procurando sala...');
 
             initFirebase()
                 .then(() => {
-                    if (db) listenSessionUpdates(currentSessionCode);
+                    if (db) window.listenSessionUpdates(currentSessionCode);
                 })
                 .catch(() => {
-                    updateConnectionBadge('offline', 'Modo Offline');
+                    window.updateConnectionBadge('offline', 'Modo Offline');
                 });
-        }
-
-        function updateUrlSession(code) {
-            try {
-                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('session', code);
-                    window.history.pushState({ session: code }, '', url.toString());
-                }
-            } catch (e) {}
-        }
-
-        function listenSessionUpdates(code) {
-            if (!db) return;
-            
-            db.collection('sessions').doc(code).onSnapshot((doc) => {
-                if (doc.exists) {
-                    hideError();
-                    updateConnectionBadge('online', 'Nuvem Conectada');
-                    sessionData = doc.data();
-                    renderUI();
-                    if (retryConnectionInterval) {
-                        clearInterval(retryConnectionInterval);
-                        retryConnectionInterval = null;
-                    }
-                } else {
-                    if (currentUser.role === 'host') {
-                        db.collection('sessions').doc(code).set(sessionData).catch(console.error);
-                    } else {
-                        updateConnectionBadge('connecting', 'A procurar sala...');
-                        displayError(`
-                            <div class="flex flex-col gap-1">
-                                <span>A procurar a Sessão <strong>#${code}</strong> na TV (${targetDatabaseName})...</span>
-                                <span class="text-[11px] opacity-80">A sala #${code} ainda não foi sincronizada na nuvem pela TV. Certifique-se de que as regras da base ${targetDatabaseName} estão liberadas.</span>
-                            </div>
-                        `);
-
-                        if (!retryConnectionInterval) {
-                            retryConnectionInterval = setInterval(() => {
-                                if (!db) return;
-                                db.collection('sessions').doc(code).get().then(snap => {
-                                    if (snap.exists) {
-                                        hideError();
-                                        sessionData = snap.data();
-                                        renderUI();
-                                        clearInterval(retryConnectionInterval);
-                                        retryConnectionInterval = null;
-                                    }
-                                }).catch(console.warn);
-                            }, 2500);
-                        }
-                    }
-                }
-            }, (err) => {
-                console.warn("Aviso no Firestore listener:", err);
-                updateConnectionBadge('offline', 'Modo Local');
-                const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
-                displayError(`<strong>Erro no Firestore (${targetDatabaseName}):</strong> ${errDetail}`);
-            });
-        }
-
-        function renderUI() {
-            if (currentUser.role === 'host') {
-                renderQueueList();
-                checkQueueState();
-            } else {
-                renderGuestQueue();
-            }
-        }
-
-        function checkQueueState() {
-            if (!sessionData.currentSong && sessionData.songs && sessionData.songs.length > 0) {
-                const nextSong = sessionData.songs[0];
-                startCountdown(nextSong);
-            }
-        }
-
-        function startCountdown(song) {
-            document.getElementById('nextSingerName').textContent = song.userName;
-            document.getElementById('nextSongTitle').textContent = song.title || 'Música Selecionada';
-            document.getElementById('countdownOverlay').classList.remove('hidden');
-
-            let seconds = 10;
-            document.getElementById('countdownTimer').textContent = seconds;
-            playBeepSound();
-
-            clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                seconds--;
-                document.getElementById('countdownTimer').textContent = seconds;
-                
-                if (seconds > 0) {
-                    playBeepSound();
-                } else {
-                    clearInterval(countdownInterval);
-                    playNextSong();
-                }
-            }, 1000);
-        }
-
-        async function playNextSong() {
-            if (!sessionData.songs || sessionData.songs.length === 0) return;
-
-            const currentSong = sessionData.songs.shift();
-            sessionData.currentSong = currentSong;
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    songs: sessionData.songs,
-                    currentSong: currentSong
-                }).catch(e => console.error(e));
-            }
-
-            document.getElementById('countdownOverlay').classList.add('hidden');
-            document.getElementById('currentSongBar').classList.remove('hidden');
-            document.getElementById('playerEmptyState').classList.add('hidden');
-
-            document.getElementById('currentSongTitle').textContent = currentSong.title || 'Música do YouTube';
-            document.getElementById('currentSingerName').textContent = `Cantando agora: ${currentSong.userName}`;
-
-            if (isPlayerReady && player) {
-                player.loadVideoById(currentSong.videoId);
-                maximizePlayer();
-            }
-        }
-
-        async function finishCurrentSong() {
-            sessionData.currentSong = null;
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({ currentSong: null }).catch(e => console.error(e));
-            }
-            document.getElementById('currentSongBar').classList.add('hidden');
-            checkQueueState();
-        }
-
-        function skipCurrentSong() {
-            if (player && isPlayerReady) player.stopVideo();
-            finishCurrentSong();
-            showToast('Música pulada!', 'info');
-        }
+        };
 
         async function fetchYouTubeVideoId(query) {
-            const urlMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-            if (urlMatch && urlMatch[1]) {
-                return { videoId: urlMatch[1], title: "Música Selecionada" };
+            const ytMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+                return { videoId: ytMatch[1], title: query };
             }
-
-            const searchTerm = query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`;
-
+            
             try {
-                const response = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchTerm)}&filter=videos`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data && data.items && data.items.length > 0) {
-                        const firstVideo = data.items[0];
-                        const videoId = firstVideo.url ? firstVideo.url.replace('/watch?v=', '') : null;
-                        if (videoId) {
-                            return { videoId: videoId, title: firstVideo.title || searchTerm };
+                const cleanQuery = encodeURIComponent(query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`);
+                const res = await fetch(`https://pipedapi.kavin.rocks/search?q=${cleanQuery}&filter=all`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.items && data.items.length > 0) {
+                        const firstVideo = data.items.find(item => item.type === 'stream');
+                        if (firstVideo) {
+                            const vId = firstVideo.url.split('v=')[1] || firstVideo.url.split('/').pop();
+                            return { videoId: vId, title: firstVideo.title };
                         }
                     }
                 }
-            } catch (err) {
-                console.warn("Busca via Piped indisponível:", err);
+            } catch(e) {
+                console.warn("Piped API Search Fallback:", e);
             }
 
-            return { videoId: "L0MK7qz13bU", title: searchTerm };
+            const cleanTitle = query.toLowerCase().includes('karaoke') ? query : `${query} (Karaokê)`;
+            return { videoId: "L0MK7qz13bU", title: cleanTitle };
         }
 
-        async function searchAndAddSong() {
+        window.searchAndAddSong = async function() {
             const nameInput = document.getElementById('guestNameQuickInput');
             const queryInput = document.getElementById('songQueryInput');
             const btn = document.getElementById('addSongBtn');
@@ -790,7 +674,7 @@
             const query = queryInput.value.trim();
 
             if (!query) {
-                showToast('Digite o nome da música ou cantor!', 'error');
+                window.showToast('Digite o nome da música ou cantor!', 'error');
                 return;
             }
 
@@ -813,9 +697,8 @@
             sessionData.songs.push(newSong);
 
             if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).update({
-                    songs: sessionData.songs
-                }).catch(err => {
+                const docRef = doc(db, 'sessions', currentSessionCode);
+                updateDoc(docRef, { songs: sessionData.songs }).catch(err => {
                     console.warn("Música adicionada localmente:", err);
                 });
             }
@@ -826,20 +709,70 @@
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-plus text-sm"></i> <span>Adicionar à Fila</span>`;
 
-            showToast(`Música "${songResult.title}" enviada!`, 'success');
-        }
+            window.showToast(`Música "${songResult.title}" enviada!`, 'success');
+        };
 
-        function maximizePlayer() {
-            document.getElementById('playerContainer').classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
-            document.getElementById('fullscreenExitBtn').classList.remove('hidden');
-        }
+        window.playNextSong = async function() {
+            if (!sessionData.songs || sessionData.songs.length === 0) return;
 
-        function minimizePlayer() {
-            document.getElementById('playerContainer').classList.remove('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
-            document.getElementById('fullscreenExitBtn').classList.add('hidden');
-        }
+            const currentSong = sessionData.songs.shift();
+            sessionData.currentSong = currentSong;
 
-        function setupMonitorView() {
+            if (isFirebaseActive && db) {
+                const docRef = doc(db, 'sessions', currentSessionCode);
+                updateDoc(docRef, {
+                    songs: sessionData.songs,
+                    currentSong: currentSong
+                }).catch(e => console.error(e));
+            }
+
+            document.getElementById('countdownOverlay').classList.add('hidden');
+            document.getElementById('currentSongBar').classList.remove('hidden');
+            document.getElementById('playerEmptyState').classList.add('hidden');
+
+            document.getElementById('currentSongTitle').textContent = currentSong.title || 'Música do YouTube';
+            document.getElementById('currentSingerName').textContent = `Cantando agora: ${currentSong.userName}`;
+
+            if (isPlayerReady && player) {
+                player.loadVideoById(currentSong.videoId);
+                window.maximizePlayer();
+            }
+        };
+
+        window.finishCurrentSong = async function() {
+            sessionData.currentSong = null;
+            if (isFirebaseActive && db) {
+                const docRef = doc(db, 'sessions', currentSessionCode);
+                updateDoc(docRef, { currentSong: null }).catch(e => console.error(e));
+            }
+            document.getElementById('currentSongBar').classList.add('hidden');
+            checkQueueState();
+        };
+
+        window.skipCurrentSong = function() {
+            if (player && isPlayerReady) player.stopVideo();
+            window.finishCurrentSong();
+            window.showToast('Música pulada!', 'info');
+        };
+
+        window.resetToLanding = function() {
+            currentSessionCode = null;
+            currentUser = { name: '', role: 'guest' };
+            try {
+                if (window.history && window.history.pushState && window.location.protocol.startsWith('http')) {
+                    const cleanUrl = window.location.origin + window.location.pathname;
+                    window.history.pushState({}, '', cleanUrl);
+                }
+            } catch (e) {}
+
+            document.getElementById('screenLanding').classList.remove('hidden');
+            document.getElementById('screenMonitor').classList.add('hidden');
+            document.getElementById('screenGuest').classList.add('hidden');
+            document.getElementById('sessionBadge').classList.add('hidden');
+            window.hideError();
+        };
+
+        window.setupMonitorView = function() {
             document.getElementById('screenLanding').classList.add('hidden');
             document.getElementById('screenGuest').classList.add('hidden');
             document.getElementById('screenMonitor').classList.remove('hidden');
@@ -852,9 +785,9 @@
             document.getElementById('leaveSessionBtn').classList.remove('hidden');
 
             generateQRCodes();
-        }
+        };
 
-        function setupGuestView() {
+        window.setupGuestView = function() {
             document.getElementById('screenLanding').classList.add('hidden');
             document.getElementById('screenMonitor').classList.add('hidden');
             document.getElementById('screenGuest').classList.remove('hidden');
@@ -865,29 +798,40 @@
             document.getElementById('sessionBadge').classList.remove('hidden');
             document.getElementById('sessionBadge').classList.add('flex');
             document.getElementById('leaveSessionBtn').classList.remove('hidden');
-        }
+        };
 
         function generateQRCodes() {
-            const targetDomain = "https://karaoke.top";
-            const sessionUrl = `${targetDomain}/?session=${currentSessionCode}`;
-
+            const hostOrigin = (window.location.protocol.startsWith('http') && window.location.origin) ? window.location.origin : 'https://karaoke.top';
+            const sessionUrl = `${hostOrigin}${window.location.pathname}?session=${currentSessionCode}`;
             const qrElem = document.getElementById('qrcode');
             const modalQrElem = document.getElementById('modalQrcode');
 
-            qrElem.innerHTML = '';
-            modalQrElem.innerHTML = '';
+            if (qrElem) qrElem.innerHTML = '';
+            if (modalQrElem) modalQrElem.innerHTML = '';
 
             if (typeof QRCode !== 'undefined') {
-                new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
-                new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
+                if (qrElem) new QRCode(qrElem, { text: sessionUrl, width: 140, height: 140 });
+                if (modalQrElem) new QRCode(modalQrElem, { text: sessionUrl, width: 220, height: 220 });
             }
 
-            document.getElementById('qrUrlText').textContent = sessionUrl;
-            document.getElementById('modalQrCodeText').textContent = sessionUrl;
+            const qrUrlText = document.getElementById('qrUrlText');
+            const modalQrCodeText = document.getElementById('modalQrCodeText');
+            if (qrUrlText) qrUrlText.textContent = sessionUrl;
+            if (modalQrCodeText) modalQrCodeText.textContent = sessionUrl;
+        }
+
+        function renderUI() {
+            if (currentUser.role === 'host') {
+                renderQueueList();
+                checkQueueState();
+            } else {
+                renderGuestQueue();
+            }
         }
 
         function renderQueueList() {
             const list = document.getElementById('queueList');
+            if (!list) return;
             const songs = sessionData.songs || [];
             document.getElementById('queueCount').textContent = songs.length;
 
@@ -911,6 +855,7 @@
 
         function renderGuestQueue() {
             const list = document.getElementById('guestQueueList');
+            if (!list) return;
             const songs = sessionData.songs || [];
 
             if (songs.length === 0) {
@@ -931,17 +876,39 @@
             `).join('');
         }
 
-        function toggleQrModal() {
-            document.getElementById('qrModal').classList.toggle('hidden');
+        function checkQueueState() {
+            if (!sessionData.currentSong && sessionData.songs && sessionData.songs.length > 0) {
+                const nextSong = sessionData.songs[0];
+                startCountdown(nextSong);
+            }
+        }
+
+        function startCountdown(song) {
+            document.getElementById('nextSingerName').textContent = song.userName;
+            document.getElementById('nextSongTitle').textContent = song.title || 'Música do YouTube';
+            document.getElementById('countdownOverlay').classList.remove('hidden');
+
+            let seconds = 10;
+            document.getElementById('countdownTimer').textContent = seconds;
+            playBeepSound();
+
+            clearInterval(countdownInterval);
+            countdownInterval = setInterval(() => {
+                seconds--;
+                document.getElementById('countdownTimer').textContent = seconds;
+                
+                if (seconds > 0) {
+                    playBeepSound();
+                } else {
+                    clearInterval(countdownInterval);
+                    window.playNextSong();
+                }
+            }, 1000);
         }
 
         function playBeepSound() {
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                const ctx = new AudioContext();
-                if (ctx.state === 'suspended') ctx.resume();
-                
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -954,12 +921,26 @@
             } catch (e) {}
         }
 
+        window.toggleQrModal = function() {
+            document.getElementById('qrModal').classList.toggle('hidden');
+        };
+
+        window.maximizePlayer = function() {
+            document.getElementById('playerContainer').classList.add('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
+            document.getElementById('fullscreenExitBtn').classList.remove('hidden');
+        };
+
+        window.minimizePlayer = function() {
+            document.getElementById('playerContainer').classList.remove('fixed', 'inset-0', 'z-50', 'w-screen', 'h-screen', 'rounded-none');
+            document.getElementById('fullscreenExitBtn').classList.add('hidden');
+        };
+
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        function onYouTubeIframeAPIReady() {
+        window.onYouTubeIframeAPIReady = function() {
             player = new YT.Player('ytPlayer', {
                 height: '100%',
                 width: '100%',
@@ -968,17 +949,13 @@
                     'onReady': () => { isPlayerReady = true; },
                     'onStateChange': (e) => {
                         if (e.data === YT.PlayerState.ENDED) {
-                            minimizePlayer();
-                            finishCurrentSong();
+                            window.minimizePlayer();
+                            window.finishCurrentSong();
                         }
                     }
                 }
             });
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') minimizePlayer();
-        });
+        };
 
         window.addEventListener('DOMContentLoaded', async () => {
             initFirebase().catch(console.warn);
@@ -989,11 +966,11 @@
                 if (sessionParam) {
                     currentSessionCode = sessionParam;
                     currentUser.role = 'guest';
-                    setupGuestView();
+                    window.setupGuestView();
                     
                     await initFirebase();
                     if (db) {
-                        listenSessionUpdates(currentSessionCode);
+                        window.listenSessionUpdates(currentSessionCode);
                     }
                 }
             } catch(e) {
