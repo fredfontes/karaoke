@@ -70,7 +70,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-<h1>teste</h1>
+
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -355,7 +355,7 @@
         let retryConnectionInterval = null;
 
         // Função para garantir tempo limite nas chamadas do Firebase
-        function withTimeout(promise, ms = 3500, errorMessage = "Tempo limite de conexão excedido") {
+        function withTimeout(promise, ms = 6000, errorMessage = "Tempo limite de conexão excedido") {
             let timeoutId;
             const timeoutPromise = new Promise((_, reject) => {
                 timeoutId = setTimeout(() => reject(new Error(errorMessage)), ms);
@@ -373,10 +373,19 @@
                         if (!firebase.apps.length) {
                             firebase.initializeApp(firebaseConfig);
                         }
+                        
                         db = firebase.firestore();
+                        
+                        // O SEGREDO: Força o uso de HTTP Long Polling em vez de WebSockets!
+                        // Evita travamentos por firewall, iFrames e políticas do navegador.
+                        try {
+                            db.settings({ experimentalForceLongPolling: true });
+                        } catch (e) {
+                            console.warn("Aviso nas configurações do Firestore:", e);
+                        }
 
-                        // Tenta autenticar anonimamente com timeout de 3.5s
-                        withTimeout(firebase.auth().signInAnonymously(), 3500, "Timeout ao conectar no Firebase Auth")
+                        // Tenta autenticar anonimamente com timeout estendido de 6s
+                        withTimeout(firebase.auth().signInAnonymously(), 6000, "Timeout ao conectar no Firebase Auth")
                             .then(() => {
                                 isFirebaseActive = true;
                                 updateConnectionBadge('online', 'Nuvem Conectada');
@@ -532,8 +541,8 @@
             try {
                 await initFirebase();
                 if (db) {
-                    // Grava no Firestore com tempo limite máximo de 3.5 segundos
-                    await withTimeout(db.collection('sessions').doc(code).set(data), 3500, "O servidor do Firestore não respondeu a tempo.");
+                    // Grava no Firestore com tempo limite de 5 segundos
+                    await withTimeout(db.collection('sessions').doc(code).set(data), 5000, "O servidor do Firestore não respondeu a tempo.");
                     console.log("Sessão gravada no Firestore:", code);
                     
                     updateConnectionBadge('online', 'Nuvem Conectada');
@@ -548,7 +557,7 @@
                 const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
                 displayError(`
                     <strong>Falha ao conectar no Firebase:</strong> ${errDetail}
-                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta apenas em Modo Local. Para conectar os celulares, verifique se criou o <u>Firestore Database</u> e publicou as <u>Rules</u> no Console do Firebase.</span>
+                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta em Modo Local. Para conectar os celulares, certifique-se de ativar o <u>Firestore Database</u> e publicar as <u>Rules</u> no Console do Firebase.</span>
                 `);
             }
         }
@@ -567,12 +576,10 @@
 
             document.getElementById('guestNameQuickInput').value = guestName;
 
-            // Transição imediata de tela
             updateUrlSession(currentSessionCode);
             setupGuestView();
             updateConnectionBadge('connecting', 'Procurando sala...');
 
-            // Conexão em segundo plano
             initFirebase()
                 .then(() => {
                     if (db) listenSessionUpdates(currentSessionCode);
@@ -580,33 +587,6 @@
                 .catch(() => {
                     updateConnectionBadge('offline', 'Modo Offline');
                 });
-        }
-
-        async function joinSession() {
-            const code = document.getElementById('joinCodeInput').value.trim();
-            const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
-
-            if (!code || code.length !== 4) {
-                showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
-                return;
-            }
-
-            currentUser = { name: guestName, role: 'guest' };
-            currentSessionCode = code;
-
-            document.getElementById('guestNameQuickInput').value = guestName;
-
-            updateUrlSession(currentSessionCode);
-            setupGuestView();
-
-            try {
-                await initFirebase();
-                if (db) {
-                    listenSessionUpdates(currentSessionCode);
-                }
-            } catch (err) {
-                console.warn("Aviso ao conectar no Firebase:", err);
-            }
         }
 
         function updateUrlSession(code) {
