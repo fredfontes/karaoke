@@ -6,12 +6,12 @@
     <title>KARAOKE.TOP</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- QRCode JS -->
+    <!-- QRCode JS Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    <!-- Google Fonts: Syne & Plus Jakarta Sans -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@800;900&display=swap" rel="stylesheet">
@@ -42,7 +42,7 @@
         }
 
         .disco-card {
-            background: rgba(15, 23, 42, 0.6);
+            background: rgba(15, 23, 42, 0.65);
             backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
@@ -70,8 +70,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-
-    <!-- Header -->
+<h1>teste</h1>
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -87,7 +86,9 @@
             
             <div id="sessionBadge" class="hidden items-center gap-3">
                 <div class="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full backdrop-blur-md">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span id="connectionDot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <span id="connectionStatusText" class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Conectando...</span>
+                    <span class="text-slate-600">|</span>
                     <span class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">Sessão:</span>
                     <span id="badgeCode" class="font-mono font-extrabold text-pink-400 text-sm"></span>
                 </div>
@@ -98,18 +99,17 @@
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
 
         <!-- Banner de Diagnóstico e Erros -->
-        <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-mono backdrop-blur-md">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-triangle-exclamation text-lg text-red-400"></i>
-                <div id="errorAlertText">Aviso de erro...</div>
+        <div id="errorAlert" class="hidden mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono backdrop-blur-md">
+            <div class="flex items-start gap-3">
+                <i class="fa-solid fa-triangle-exclamation text-lg text-amber-400 mt-0.5"></i>
+                <div id="errorAlertText">Aviso de conexão...</div>
             </div>
         </div>
 
-        <!-- TELA 1: INÍCIO / CRIAR OU ENTRAR -->
+        <!-- TELA 1: LANDING / CRIAR OU ENTRAR -->
         <section id="screenLanding" class="grid md:grid-cols-2 gap-8 items-center py-6">
             <!-- Criar Sessão (TV/Monitor) -->
             <div class="disco-card rounded-3xl p-6 md:p-8 relative overflow-hidden group hover:border-pink-500/40 transition-all">
@@ -121,7 +121,7 @@
                 </div>
                 
                 <p class="text-slate-400 text-sm mb-6 leading-relaxed">
-                    Abre o painel principal com o tocador de vídeos em tela cheia e o QR Code automático para a galera pedir músicas.
+                    Abre o painel principal com o tocador de vídeos e gera o QR Code automático para a galera pedir músicas no celular.
                 </p>
 
                 <div class="space-y-4">
@@ -131,7 +131,7 @@
                     </div>
                     <button id="btnCreateSession" type="button" onclick="createSession()" class="disco-btn w-full text-white font-extrabold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2">
                         <i class="fa-solid fa-play text-sm"></i>
-                        <span>Abrir Palco do Karaokê</span>
+                        <span id="btnCreateSessionText">Abrir Palco do Karaokê</span>
                     </button>
                 </div>
             </div>
@@ -249,7 +249,7 @@
                     <div class="disco-card p-6 rounded-3xl flex flex-col items-center text-center">
                         <div id="qrcode" class="p-3 bg-white rounded-2xl shadow-2xl mb-4 min-h-[140px] flex items-center justify-center"></div>
                         <p class="text-xs text-slate-400 font-medium">Escaneie para abrir no celular</p>
-                        <p id="qrUrlText" class="text-[11px] font-mono text-pink-400 mt-1.5 select-all"></p>
+                        <p id="qrUrlText" class="text-[11px] font-mono text-pink-400 mt-1.5 select-all break-all"></p>
                     </div>
 
                     <div class="disco-card p-5 rounded-3xl flex-grow flex flex-col">
@@ -311,7 +311,7 @@
 
     </main>
 
-    <!-- Modal QR Code Maximizado -->
+    <!-- Modal QR Code -->
     <div id="qrModal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4">
         <div class="disco-card p-8 rounded-3xl max-w-sm w-full text-center relative border border-white/10">
             <button onclick="toggleQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
@@ -320,9 +320,12 @@
             <h3 class="text-xl font-extrabold text-white mb-2">Escanear QR Code</h3>
             <p class="text-xs text-slate-400 mb-6">Aponte a câmera para abrir o karaoke.top nesta sessão</p>
             <div id="modalQrcode" class="p-4 bg-white rounded-2xl shadow-2xl mx-auto inline-block mb-4"></div>
-            <p id="modalQrCodeText" class="text-xs font-mono text-pink-400 font-bold select-all"></p>
+            <p id="modalQrCodeText" class="text-xs font-mono text-pink-400 font-bold select-all break-all"></p>
         </div>
     </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Firebase SDKs (Compat v10) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -342,24 +345,62 @@
 
         let db = null;
         let isFirebaseActive = false;
+        let authPromise = null;
         let currentSessionCode = null;
         let currentUser = { name: '', role: 'guest' };
-        let sessionData = { songs: [], status: 'idle' };
+        let sessionData = { songs: [], status: 'idle', currentSong: null };
         let player = null;
         let isPlayerReady = false;
         let countdownInterval = null;
+        let retryConnectionInterval = null;
 
-        try {
-            if (typeof firebase !== 'undefined') {
-                firebase.initializeApp(firebaseConfig);
-                db = firebase.firestore();
-                firebase.auth().signInAnonymously().catch(err => {
-                    console.warn("Autenticação anônima:", err);
+        function initFirebase() {
+            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou. Verifique a sua conexão à internet."));
+            if (isFirebaseActive && db) return Promise.resolve();
+
+            if (!authPromise) {
+                authPromise = new Promise((resolve, reject) => {
+                    try {
+                        if (!firebase.apps.length) {
+                            firebase.initializeApp(firebaseConfig);
+                        }
+                        db = firebase.firestore();
+
+                        firebase.auth().signInAnonymously()
+                            .then(() => {
+                                isFirebaseActive = true;
+                                updateConnectionBadge('online', 'Nuvem Conectada');
+                                resolve();
+                            })
+                            .catch(err => {
+                                console.warn("Erro na Autenticação Anónima do Firebase:", err);
+                                updateConnectionBadge('offline', 'Erro de Conexão');
+                                reject(err);
+                            });
+                    } catch (e) {
+                        console.error("Exceção na inicialização do Firebase:", e);
+                        updateConnectionBadge('offline', 'Modo Offline');
+                        reject(e);
+                    }
                 });
-                isFirebaseActive = true;
             }
-        } catch (e) {
-            console.warn("Erro no Firebase SDK:", e);
+
+            return authPromise;
+        }
+
+        function updateConnectionBadge(state, text) {
+            const dot = document.getElementById('connectionDot');
+            const txt = document.getElementById('connectionStatusText');
+            if (!dot || !txt) return;
+
+            txt.textContent = text;
+            if (state === 'online') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            } else if (state === 'connecting') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+            }
         }
 
         var tag = document.createElement('script');
@@ -388,16 +429,81 @@
             if (e.key === 'Escape') minimizePlayer();
         });
 
-        /* ====================================================================
-         * NAVEGAÇÃO & GERENCIAMENTO DE SESSÃO
-         * ==================================================================== */
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'error' ? 'bg-red-950/90 border-red-500/40 text-red-200' :
+                            type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200' :
+                            'bg-slate-900/90 border-slate-700 text-slate-200';
+            
+            const icon = type === 'error' ? 'fa-circle-xmark text-red-400' :
+                         type === 'success' ? 'fa-circle-check text-emerald-400' :
+                         'fa-circle-info text-cyan-400';
+
+            toast.className = `pointer-events-auto flex items-center gap-3 border px-4 py-3 rounded-2xl text-xs font-semibold backdrop-blur-xl shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 ${bgClass}`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        function displayError(msg) {
+            const box = document.getElementById('errorAlert');
+            const txt = document.getElementById('errorAlertText');
+            if (txt && box) {
+                txt.innerHTML = msg;
+                box.classList.remove('hidden');
+            }
+        }
+
+        function hideError() {
+            const box = document.getElementById('errorAlert');
+            if (box) box.classList.add('hidden');
+        }
 
         function resetToLanding() {
-            window.location.href = window.location.origin + window.location.pathname;
+            currentSessionCode = null;
+            currentUser = { name: '', role: 'guest' };
+
+            if (retryConnectionInterval) clearInterval(retryConnectionInterval);
+
+            try {
+                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('session');
+                    window.history.pushState({}, '', url.pathname + url.search);
+                }
+            } catch (e) {}
+
+            document.getElementById('screenMonitor').classList.add('hidden');
+            document.getElementById('screenGuest').classList.add('hidden');
+            document.getElementById('screenLanding').classList.remove('hidden');
+            document.getElementById('sessionBadge').classList.add('hidden');
+
+            if (player && isPlayerReady && typeof player.stopVideo === 'function') {
+                try { player.stopVideo(); } catch(err){}
+            }
         }
 
         async function createSession() {
+            const btn = document.getElementById('btnCreateSession');
+            const btnText = document.getElementById('btnCreateSessionText');
             const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
+            
+            btn.disabled = true;
+            btnText.textContent = "Sincronizando com a nuvem...";
+            updateConnectionBadge('connecting', 'A criar sala...');
+
             currentUser = { name: hostName, role: 'host' };
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -409,15 +515,34 @@
                 createdAt: new Date().toISOString()
             };
 
-            updateUrlSession(currentSessionCode);
-            setupMonitorView();
-
-            if (isFirebaseActive && db) {
-                db.collection('sessions').doc(currentSessionCode).set(sessionData)
-                    .then(() => listenSessionUpdates(currentSessionCode))
-                    .catch(err => {
-                        displayError("Aviso do Firebase (Criação): " + err.message + ". Ative o Cloud Firestore no Console!");
-                    });
+            try {
+                await initFirebase();
+                
+                if (db) {
+                    // Grava a sessão na nuvem ANTES de exibir o monitor
+                    await db.collection('sessions').doc(currentSessionCode).set(sessionData);
+                    console.log("Sessão criada com sucesso no Firestore:", currentSessionCode);
+                    
+                    updateUrlSession(currentSessionCode);
+                    setupMonitorView();
+                    listenSessionUpdates(currentSessionCode);
+                    
+                    showToast(`Sessão #${currentSessionCode} pronta e sincronizada!`, 'success');
+                } else {
+                    throw new Error("Base de dados não inicializada.");
+                }
+            } catch (err) {
+                console.error("Erro ao criar sessão no Firebase:", err);
+                
+                // Fallback de interface caso o Firebase falhe
+                updateUrlSession(currentSessionCode);
+                setupMonitorView();
+                
+                displayError(`<strong>Aviso de Conexão:</strong> Não foi possível gravar no Firebase (${err.message || 'Erro de permissão'}). Verifique se as Regras do Firestore estão em modo de teste com <code>allow read, write: if true;</code>.`);
+                showToast(`Sessão #${currentSessionCode} aberta em modo local.`, "info");
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = "Abrir Palco do Karaokê";
             }
         }
 
@@ -426,7 +551,7 @@
             const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
 
             if (!code || code.length !== 4) {
-                alert('Insira o código numérico de 4 dígitos!');
+                showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
                 return;
             }
 
@@ -438,35 +563,72 @@
             updateUrlSession(currentSessionCode);
             setupGuestView();
 
-            if (isFirebaseActive && db) {
-                listenSessionUpdates(currentSessionCode);
+            try {
+                await initFirebase();
+                if (db) {
+                    listenSessionUpdates(currentSessionCode);
+                }
+            } catch (err) {
+                console.warn("Aviso ao conectar no Firebase:", err);
             }
         }
 
         function updateUrlSession(code) {
-            if (window.history && window.history.pushState) {
-                const newUrl = `${window.location.origin}${window.location.pathname}?session=${code}`;
-                window.history.pushState({ path: newUrl }, '', newUrl);
-            }
+            try {
+                if (window.location.protocol.startsWith('http') && window.history && window.history.pushState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('session', code);
+                    window.history.pushState({ session: code }, '', url.toString());
+                }
+            } catch (e) {}
         }
 
         function listenSessionUpdates(code) {
             if (!db) return;
+            
             db.collection('sessions').doc(code).onSnapshot((doc) => {
                 if (doc.exists) {
                     hideError();
+                    updateConnectionBadge('online', 'Nuvem Conectada');
                     sessionData = doc.data();
                     renderUI();
+                    if (retryConnectionInterval) {
+                        clearInterval(retryConnectionInterval);
+                        retryConnectionInterval = null;
+                    }
                 } else {
-                    // Fallback para criação dinâmica caso o documento inicial não tenha sido persistido
                     if (currentUser.role === 'host') {
-                        db.collection('sessions').doc(code).set(sessionData);
+                        // Se o anfitrião não encontra o doc, re-grava
+                        db.collection('sessions').doc(code).set(sessionData).catch(console.error);
                     } else {
-                        displayError("Aguardando criação da sessão #" + code + " no Firebase Firestore...");
+                        updateConnectionBadge('connecting', 'A procurar sala...');
+                        displayError(`
+                            <div class="flex flex-col gap-2">
+                                <span>A procurar a Sessão <strong>#${code}</strong> no Palco da TV...</span>
+                                <span class="text-[11px] opacity-80">A certificar que o anfitrião iniciou a sala na TV. Tentando reconectar automaticamente...</span>
+                            </div>
+                        `);
+
+                        // Configura re-tentativa periódica caso o celular tenha entrado antes da TV salvar
+                        if (!retryConnectionInterval) {
+                            retryConnectionInterval = setInterval(() => {
+                                console.log("A re-tentar procurar sessão no Firestore...");
+                                db.collection('sessions').doc(code).get().then(snap => {
+                                    if (snap.exists) {
+                                        hideError();
+                                        sessionData = snap.data();
+                                        renderUI();
+                                        clearInterval(retryConnectionInterval);
+                                        retryConnectionInterval = null;
+                                    }
+                                }).catch(console.warn);
+                            }, 2500);
+                        }
                     }
                 }
             }, (err) => {
-                displayError("Ative o Cloud Firestore no Firebase Console! Erro: " + err.message);
+                console.warn("Aviso no Firestore listener:", err.message);
+                updateConnectionBadge('offline', 'Erro de Conexão');
             });
         }
 
@@ -479,10 +641,6 @@
             }
         }
 
-        /* ====================================================================
-         * REPRODUÇÃO & FILA
-         * ==================================================================== */
-
         function checkQueueState() {
             if (!sessionData.currentSong && sessionData.songs && sessionData.songs.length > 0) {
                 const nextSong = sessionData.songs[0];
@@ -492,7 +650,7 @@
 
         function startCountdown(song) {
             document.getElementById('nextSingerName').textContent = song.userName;
-            document.getElementById('nextSongTitle').textContent = song.title || 'Música do YouTube';
+            document.getElementById('nextSongTitle').textContent = song.title || 'Música Selecionada';
             document.getElementById('countdownOverlay').classList.remove('hidden');
 
             let seconds = 10;
@@ -551,11 +709,35 @@
         function skipCurrentSong() {
             if (player && isPlayerReady) player.stopVideo();
             finishCurrentSong();
+            showToast('Música pulada!', 'info');
         }
 
-        /* ====================================================================
-         * ADICIONAR MÚSICA GARANTIDO
-         * ==================================================================== */
+        async function fetchYouTubeVideoId(query) {
+            const urlMatch = query.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+            if (urlMatch && urlMatch[1]) {
+                return { videoId: urlMatch[1], title: "Música Selecionada" };
+            }
+
+            const searchTerm = query.toLowerCase().includes('karaoke') ? query : `${query} karaoke`;
+
+            try {
+                const response = await fetch(`https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(searchTerm)}&filter=videos`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.items && data.items.length > 0) {
+                        const firstVideo = data.items[0];
+                        const videoId = firstVideo.url ? firstVideo.url.replace('/watch?v=', '') : null;
+                        if (videoId) {
+                            return { videoId: videoId, title: firstVideo.title || searchTerm };
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn("Busca via Piped indisponível:", err);
+            }
+
+            return { videoId: "L0MK7qz13bU", title: searchTerm };
+        }
 
         async function searchAndAddSong() {
             const nameInput = document.getElementById('guestNameQuickInput');
@@ -566,21 +748,21 @@
             const query = queryInput.value.trim();
 
             if (!query) {
-                alert('Digite o nome da música ou cantor!');
+                showToast('Digite o nome da música ou cantor!', 'error');
                 return;
             }
 
             currentUser.name = userName;
 
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Enviando...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-compact-disc animate-spin"></i> <span>Procurando música...</span>`;
 
-            const songTitle = query.toLowerCase().includes('karaoke') ? query : `${query} (Karaokê)`;
+            const songResult = await fetchYouTubeVideoId(query);
 
             const newSong = {
                 id: Date.now().toString(),
-                videoId: "L0MK7qz13bU",
-                title: songTitle,
+                videoId: songResult.videoId,
+                title: songResult.title,
                 userName: userName,
                 createdAt: new Date().toISOString()
             };
@@ -590,9 +772,9 @@
 
             if (isFirebaseActive && db) {
                 db.collection('sessions').doc(currentSessionCode).update({
-                    songs: firebase.firestore.FieldValue.arrayUnion(newSong)
+                    songs: sessionData.songs
                 }).catch(err => {
-                    console.warn("Música adicionada localmente. Erro no Firestore:", err);
+                    console.warn("Música adicionada localmente:", err);
                 });
             }
 
@@ -602,22 +784,7 @@
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-plus text-sm"></i> <span>Adicionar à Fila</span>`;
 
-            alert(`Música "${songTitle}" enviada com sucesso!`);
-        }
-
-        /* ====================================================================
-         * HELPERS DE INTERFACE & ERROS
-         * ==================================================================== */
-
-        function displayError(msg) {
-            const box = document.getElementById('errorAlert');
-            const txt = document.getElementById('errorAlertText');
-            txt.textContent = msg;
-            box.classList.remove('hidden');
-        }
-
-        function hideError() {
-            document.getElementById('errorAlert').classList.add('hidden');
+            showToast(`Música "${songResult.title}" enviada!`, 'success');
         }
 
         function maximizePlayer() {
@@ -659,7 +826,9 @@
         }
 
         function generateQRCodes() {
-            const sessionUrl = `https://karaoke.top/?session=${currentSessionCode}`;
+            const targetDomain = "https://karaoke.top";
+            const sessionUrl = `${targetDomain}/?session=${currentSessionCode}`;
+
             const qrElem = document.getElementById('qrcode');
             const modalQrElem = document.getElementById('modalQrcode');
 
@@ -726,7 +895,11 @@
 
         function playBeepSound() {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                if (ctx.state === 'suspended') ctx.resume();
+                
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -739,17 +912,24 @@
             } catch (e) {}
         }
 
-        // Auto-Detectar Sessão no URL ao carregar a página
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const sessionParam = params.get('session');
-            if (sessionParam) {
-                currentSessionCode = sessionParam;
-                currentUser.role = 'guest';
-                setupGuestView();
-                if (isFirebaseActive && db) {
-                    listenSessionUpdates(currentSessionCode);
+        window.addEventListener('DOMContentLoaded', async () => {
+            initFirebase().catch(console.warn);
+
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const sessionParam = params.get('session');
+                if (sessionParam) {
+                    currentSessionCode = sessionParam;
+                    currentUser.role = 'guest';
+                    setupGuestView();
+                    
+                    await initFirebase();
+                    if (db) {
+                        listenSessionUpdates(currentSessionCode);
+                    }
                 }
+            } catch(e) {
+                console.warn("Aviso na leitura de parâmetros de URL:", e);
             }
         });
     </script>
