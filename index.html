@@ -70,7 +70,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-
+<h1>teste</h1>
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -542,12 +542,13 @@
                     showToast(`Sessão #${code} conectada na nuvem!`, 'success');
                 }
             } catch (err) {
-                console.warn("Sincronização em segundo plano:", err.message);
+                console.warn("Sincronização em segundo plano:", err);
                 updateConnectionBadge('offline', 'Modo Local');
                 
+                const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
                 displayError(`
-                    <strong>Modo Local Ativo:</strong> A sala #${code} está aberta na TV. 
-                    <br><span class="opacity-80 text-[11px]">Se os celulares não encontrarem a sala, certifique-se de que criou a base de dados em <u>Firestore Database</u> no Console do Firebase.</span>
+                    <strong>Falha ao conectar no Firebase:</strong> ${errDetail}
+                    <br><span class="opacity-80 text-[11px]">Sua sala #${code} está aberta apenas em Modo Local. Para conectar os celulares, verifique se criou o <u>Firestore Database</u> e publicou as <u>Rules</u> no Console do Firebase.</span>
                 `);
             }
         }
@@ -639,7 +640,7 @@
                         displayError(`
                             <div class="flex flex-col gap-1">
                                 <span>A procurar a Sessão <strong>#${code}</strong> na TV...</span>
-                                <span class="text-[11px] opacity-80">Tentando conectar automaticamente. Certifique-se de que a sala #${code} foi aberta no monitor.</span>
+                                <span class="text-[11px] opacity-80">A sala #${code} ainda não foi sincronizada na nuvem pela TV. Certifique-se de que a base Firestore está criada no Firebase Console.</span>
                             </div>
                         `);
 
@@ -660,8 +661,10 @@
                     }
                 }
             }, (err) => {
-                console.warn("Aviso no Firestore listener:", err.message);
+                console.warn("Aviso no Firestore listener:", err);
                 updateConnectionBadge('offline', 'Modo Local');
+                const errDetail = err.code ? `[Erro Firebase: ${err.code}] ${err.message}` : err.message;
+                displayError(`<strong>Erro no Firestore:</strong> ${errDetail}`);
             });
         }
 
