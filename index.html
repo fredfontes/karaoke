@@ -70,7 +70,7 @@
     </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between bg-grid selection:bg-pink-500 selection:text-white">
-<h1>teste</h1>
+
     <header class="bg-black/40 backdrop-blur-xl border-b border-white/5 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-5 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3 cursor-pointer group" onclick="resetToLanding()">
@@ -354,8 +354,17 @@
         let countdownInterval = null;
         let retryConnectionInterval = null;
 
+        // Função para garantir tempo limite nas chamadas do Firebase
+        function withTimeout(promise, ms = 3500, errorMessage = "Tempo limite de conexão excedido") {
+            let timeoutId;
+            const timeoutPromise = new Promise((_, reject) => {
+                timeoutId = setTimeout(() => reject(new Error(errorMessage)), ms);
+            });
+            return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+        }
+
         function initFirebase() {
-            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou. Verifique a sua conexão à internet."));
+            if (typeof firebase === 'undefined') return Promise.reject(new Error("Firebase SDK não carregou no navegador."));
             if (isFirebaseActive && db) return Promise.resolve();
 
             if (!authPromise) {
@@ -366,19 +375,20 @@
                         }
                         db = firebase.firestore();
 
-                        firebase.auth().signInAnonymously()
+                        // Tenta autenticar anonimamente com timeout de 3.5s
+                        withTimeout(firebase.auth().signInAnonymously(), 3500, "Timeout ao conectar no Firebase Auth")
                             .then(() => {
                                 isFirebaseActive = true;
                                 updateConnectionBadge('online', 'Nuvem Conectada');
                                 resolve();
                             })
                             .catch(err => {
-                                console.warn("Erro na Autenticação Anónima do Firebase:", err);
-                                updateConnectionBadge('offline', 'Erro de Conexão');
+                                console.warn("Aviso Auth Firebase:", err.message);
+                                updateConnectionBadge('offline', 'Modo Local');
                                 reject(err);
                             });
                     } catch (e) {
-                        console.error("Exceção na inicialização do Firebase:", e);
+                        console.error("Exceção Firebase:", e);
                         updateConnectionBadge('offline', 'Modo Offline');
                         reject(e);
                     }
@@ -399,7 +409,7 @@
             } else if (state === 'connecting') {
                 dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
             } else {
-                dot.className = 'w-2 h-2 rounded-full bg-red-500';
+                dot.className = 'w-2 h-2 rounded-full bg-slate-500';
             }
         }
 
@@ -496,14 +506,8 @@
         }
 
         async function createSession() {
-            const btn = document.getElementById('btnCreateSession');
-            const btnText = document.getElementById('btnCreateSessionText');
             const hostName = document.getElementById('hostNameInput').value.trim() || 'Anfitrião';
             
-            btn.disabled = true;
-            btnText.textContent = "Sincronizando com a nuvem...";
-            updateConnectionBadge('connecting', 'A criar sala...');
-
             currentUser = { name: hostName, role: 'host' };
             currentSessionCode = Math.floor(1000 + Math.random() * 9000).toString();
 
@@ -515,35 +519,66 @@
                 createdAt: new Date().toISOString()
             };
 
+            // 1. Muda de tela e configura o monitor INSTANTANEAMENTE (Interface Responsiva)
+            updateUrlSession(currentSessionCode);
+            setupMonitorView();
+            updateConnectionBadge('connecting', 'Conectando Nuvem...');
+
+            // 2. Tenta sincronizar com o Firebase em segundo plano sem travar a interface
+            syncSessionToCloudInBackground(currentSessionCode, sessionData);
+        }
+
+        async function syncSessionToCloudInBackground(code, data) {
             try {
                 await initFirebase();
-                
                 if (db) {
-                    // Grava a sessão na nuvem ANTES de exibir o monitor
-                    await db.collection('sessions').doc(currentSessionCode).set(sessionData);
-                    console.log("Sessão criada com sucesso no Firestore:", currentSessionCode);
+                    // Grava no Firestore com tempo limite máximo de 3.5 segundos
+                    await withTimeout(db.collection('sessions').doc(code).set(data), 3500, "O servidor do Firestore não respondeu a tempo.");
+                    console.log("Sessão gravada no Firestore:", code);
                     
-                    updateUrlSession(currentSessionCode);
-                    setupMonitorView();
-                    listenSessionUpdates(currentSessionCode);
-                    
-                    showToast(`Sessão #${currentSessionCode} pronta e sincronizada!`, 'success');
-                } else {
-                    throw new Error("Base de dados não inicializada.");
+                    updateConnectionBadge('online', 'Nuvem Conectada');
+                    hideError();
+                    listenSessionUpdates(code);
+                    showToast(`Sessão #${code} conectada na nuvem!`, 'success');
                 }
             } catch (err) {
-                console.error("Erro ao criar sessão no Firebase:", err);
+                console.warn("Sincronização em segundo plano:", err.message);
+                updateConnectionBadge('offline', 'Modo Local');
                 
-                // Fallback de interface caso o Firebase falhe
-                updateUrlSession(currentSessionCode);
-                setupMonitorView();
-                
-                displayError(`<strong>Aviso de Conexão:</strong> Não foi possível gravar no Firebase (${err.message || 'Erro de permissão'}). Verifique se as Regras do Firestore estão em modo de teste com <code>allow read, write: if true;</code>.`);
-                showToast(`Sessão #${currentSessionCode} aberta em modo local.`, "info");
-            } finally {
-                btn.disabled = false;
-                btnText.textContent = "Abrir Palco do Karaokê";
+                displayError(`
+                    <strong>Modo Local Ativo:</strong> A sala #${code} está aberta na TV. 
+                    <br><span class="opacity-80 text-[11px]">Se os celulares não encontrarem a sala, certifique-se de que criou a base de dados em <u>Firestore Database</u> no Console do Firebase.</span>
+                `);
             }
+        }
+
+        async function joinSession() {
+            const code = document.getElementById('joinCodeInput').value.trim();
+            const guestName = document.getElementById('guestNameInput').value.trim() || 'Convidado';
+
+            if (!code || code.length !== 4) {
+                showToast('Insira o código numérico de 4 dígitos da sala!', 'error');
+                return;
+            }
+
+            currentUser = { name: guestName, role: 'guest' };
+            currentSessionCode = code;
+
+            document.getElementById('guestNameQuickInput').value = guestName;
+
+            // Transição imediata de tela
+            updateUrlSession(currentSessionCode);
+            setupGuestView();
+            updateConnectionBadge('connecting', 'Procurando sala...');
+
+            // Conexão em segundo plano
+            initFirebase()
+                .then(() => {
+                    if (db) listenSessionUpdates(currentSessionCode);
+                })
+                .catch(() => {
+                    updateConnectionBadge('offline', 'Modo Offline');
+                });
         }
 
         async function joinSession() {
@@ -598,21 +633,19 @@
                     }
                 } else {
                     if (currentUser.role === 'host') {
-                        // Se o anfitrião não encontra o doc, re-grava
                         db.collection('sessions').doc(code).set(sessionData).catch(console.error);
                     } else {
                         updateConnectionBadge('connecting', 'A procurar sala...');
                         displayError(`
-                            <div class="flex flex-col gap-2">
-                                <span>A procurar a Sessão <strong>#${code}</strong> no Palco da TV...</span>
-                                <span class="text-[11px] opacity-80">A certificar que o anfitrião iniciou a sala na TV. Tentando reconectar automaticamente...</span>
+                            <div class="flex flex-col gap-1">
+                                <span>A procurar a Sessão <strong>#${code}</strong> na TV...</span>
+                                <span class="text-[11px] opacity-80">Tentando conectar automaticamente. Certifique-se de que a sala #${code} foi aberta no monitor.</span>
                             </div>
                         `);
 
-                        // Configura re-tentativa periódica caso o celular tenha entrado antes da TV salvar
                         if (!retryConnectionInterval) {
                             retryConnectionInterval = setInterval(() => {
-                                console.log("A re-tentar procurar sessão no Firestore...");
+                                if (!db) return;
                                 db.collection('sessions').doc(code).get().then(snap => {
                                     if (snap.exists) {
                                         hideError();
@@ -628,7 +661,7 @@
                 }
             }, (err) => {
                 console.warn("Aviso no Firestore listener:", err.message);
-                updateConnectionBadge('offline', 'Erro de Conexão');
+                updateConnectionBadge('offline', 'Modo Local');
             });
         }
 
